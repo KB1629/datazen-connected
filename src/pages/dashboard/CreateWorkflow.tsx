@@ -63,7 +63,7 @@ interface DestinationData {
 }
 
 // Custom node components
-const DatabaseSourceNode: React.FC<NodeProps<DatabaseSourceData>> = ({ data }) => {
+const DatabaseSourceNode = ({ data }: { data: DatabaseSourceData }) => {
   return (
     <div className="flex flex-col bg-blue-950 text-white p-4 rounded-lg min-w-[200px] border border-blue-400">
       <div className="flex items-center mb-2">
@@ -79,7 +79,7 @@ const DatabaseSourceNode: React.FC<NodeProps<DatabaseSourceData>> = ({ data }) =
   );
 };
 
-const TransformNode: React.FC<NodeProps<TransformData>> = ({ data }) => {
+const TransformNode = ({ data }: { data: TransformData }) => {
   return (
     <div className="flex flex-col bg-purple-950 text-white p-4 rounded-lg min-w-[200px] border border-purple-400">
       <div className="flex items-center mb-2">
@@ -94,7 +94,7 @@ const TransformNode: React.FC<NodeProps<TransformData>> = ({ data }) => {
   );
 };
 
-const DestinationNode: React.FC<NodeProps<DestinationData>> = ({ data }) => {
+const DestinationNode = ({ data }: { data: DestinationData }) => {
   return (
     <div className="flex flex-col bg-green-950 text-white p-4 rounded-lg min-w-[200px] border border-green-400">
       <div className="flex items-center mb-2">
@@ -160,7 +160,7 @@ const CreateWorkflow = () => {
       const y = event.clientY - position.top;
       
       if (type === 'databaseSource') {
-        const newNode: Node<DatabaseSourceData> = {
+        const newNode = {
           id: `${type}_${nodeIdCounter.current++}`,
           type,
           position: { x, y },
@@ -172,10 +172,10 @@ const CreateWorkflow = () => {
           },
           targetPosition: Position.Left,
           sourcePosition: Position.Right,
-        };
+        } as Node;
         setNodes((nds) => nds.concat(newNode));
       } else if (type === 'transform') {
-        const newNode: Node<TransformData> = {
+        const newNode = {
           id: `${type}_${nodeIdCounter.current++}`,
           type,
           position: { x, y },
@@ -185,10 +185,10 @@ const CreateWorkflow = () => {
           },
           targetPosition: Position.Left,
           sourcePosition: Position.Right,
-        };
+        } as Node;
         setNodes((nds) => nds.concat(newNode));
       } else if (type === 'destination') {
-        const newNode: Node<DestinationData> = {
+        const newNode = {
           id: `${type}_${nodeIdCounter.current++}`,
           type,
           position: { x, y },
@@ -199,7 +199,7 @@ const CreateWorkflow = () => {
             tableName: 'active_users'
           },
           targetPosition: Position.Left,
-        };
+        } as Node;
         setNodes((nds) => nds.concat(newNode));
       }
     },
