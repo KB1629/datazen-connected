@@ -16,9 +16,7 @@ import {
   Save, 
   Trash2, 
   PlayCircle,
-  HelpCircle,
-  PanelLeftClose,
-  PanelLeftOpen
+  HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -40,6 +38,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+// Node data type interfaces
 interface DatabaseSourceData {
   label: string;
   connectionType: string;
@@ -62,6 +61,7 @@ interface DestinationData {
   [key: string]: unknown;
 }
 
+// Custom node components
 const DatabaseSourceNode = ({ data }: { data: DatabaseSourceData }) => {
   return (
     <div className="flex flex-col bg-blue-950 text-white p-4 rounded-lg min-w-[200px] border border-blue-400">
@@ -109,6 +109,7 @@ const DestinationNode = ({ data }: { data: DestinationData }) => {
   );
 };
 
+// Node types mapping
 const nodeTypes: NodeTypes = {
   databaseSource: DatabaseSourceNode,
   transform: TransformNode,
@@ -121,7 +122,6 @@ const CreateWorkflow = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeDragging, setNodeDragging] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodeIdCounter = useRef(1);
 
@@ -269,81 +269,65 @@ const CreateWorkflow = () => {
         </div>
         
         <div className="flex gap-6">
-          <div className={`${sidebarCollapsed ? 'w-0' : 'w-64'} flex-shrink-0 animate-fade-in transition-all duration-300 overflow-hidden relative`}>
-            <div className="absolute right-0 top-60 z-30">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-5 rounded-l-md rounded-r-none border border-r-0 border-gray-700 bg-gray-800 text-gray-400 opacity-30 hover:opacity-100 hover:text-white hover:bg-gray-700 transition-opacity"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                {sidebarCollapsed ? 
-                  <PanelLeftOpen className="h-4 w-4" /> : 
-                  <PanelLeftClose className="h-4 w-4" />
-                }
-              </Button>
-            </div>
-            
-            {!sidebarCollapsed && (
-              <Card className="bg-gray-800 border-gray-700">
-                <CardContent className="p-4">
-                  <h3 className="text-lg font-medium text-white mb-4">Components</h3>
-                  
-                  <div className="space-y-3">
-                    <div
-                      className={`p-3 bg-blue-900/40 rounded-lg border border-blue-700 cursor-move flex items-center hover:bg-blue-900/60 transition-colors duration-200 ${nodeDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, 'databaseSource')}
-                      onDragEnd={onDragEnd}
-                    >
-                      <Database className="h-5 w-5 text-blue-400 mr-2" />
-                      <span className="text-white">Database Source</span>
-                    </div>
-                    
-                    <div
-                      className={`p-3 bg-purple-900/40 rounded-lg border border-purple-700 cursor-move flex items-center hover:bg-purple-900/60 transition-colors duration-200 ${nodeDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, 'transform')}
-                      onDragEnd={onDragEnd}
-                    >
-                      <Code className="h-5 w-5 text-purple-400 mr-2" />
-                      <span className="text-white">SQL Transform</span>
-                    </div>
-                    
-                    <div
-                      className={`p-3 bg-green-900/40 rounded-lg border border-green-700 cursor-move flex items-center hover:bg-green-900/60 transition-colors duration-200 ${nodeDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, 'destination')}
-                      onDragEnd={onDragEnd}
-                    >
-                      <Table className="h-5 w-5 text-green-400 mr-2" />
-                      <span className="text-white">Destination</span>
-                    </div>
+          {/* Components Sidebar */}
+          <div className="w-64 flex-shrink-0 animate-fade-in">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-4">
+                <h3 className="text-lg font-medium text-white mb-4">Components</h3>
+                
+                <div className="space-y-3">
+                  <div
+                    className={`p-3 bg-blue-900/40 rounded-lg border border-blue-700 cursor-move flex items-center hover:bg-blue-900/60 transition-colors duration-200 ${nodeDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, 'databaseSource')}
+                    onDragEnd={onDragEnd}
+                  >
+                    <Database className="h-5 w-5 text-blue-400 mr-2" />
+                    <span className="text-white">Database Source</span>
                   </div>
                   
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium text-white mb-2">Instructions</h3>
-                    <ul className="text-sm text-gray-400 space-y-2">
-                      <li className="flex items-start">
-                        <ArrowRight className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
-                        <span>Drag components onto the canvas</span>
-                      </li>
-                      <li className="flex items-start">
-                        <ArrowRight className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
-                        <span>Connect nodes by dragging from outputs to inputs</span>
-                      </li>
-                      <li className="flex items-start">
-                        <ArrowRight className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
-                        <span>Click on nodes to edit properties</span>
-                      </li>
-                    </ul>
+                  <div
+                    className={`p-3 bg-purple-900/40 rounded-lg border border-purple-700 cursor-move flex items-center hover:bg-purple-900/60 transition-colors duration-200 ${nodeDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, 'transform')}
+                    onDragEnd={onDragEnd}
+                  >
+                    <Code className="h-5 w-5 text-purple-400 mr-2" />
+                    <span className="text-white">SQL Transform</span>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                  
+                  <div
+                    className={`p-3 bg-green-900/40 rounded-lg border border-green-700 cursor-move flex items-center hover:bg-green-900/60 transition-colors duration-200 ${nodeDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, 'destination')}
+                    onDragEnd={onDragEnd}
+                  >
+                    <Table className="h-5 w-5 text-green-400 mr-2" />
+                    <span className="text-white">Destination</span>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <h3 className="text-lg font-medium text-white mb-2">Instructions</h3>
+                  <ul className="text-sm text-gray-400 space-y-2">
+                    <li className="flex items-start">
+                      <ArrowRight className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
+                      <span>Drag components onto the canvas</span>
+                    </li>
+                    <li className="flex items-start">
+                      <ArrowRight className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
+                      <span>Connect nodes by dragging from outputs to inputs</span>
+                    </li>
+                    <li className="flex items-start">
+                      <ArrowRight className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
+                      <span>Click on nodes to edit properties</span>
+                    </li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
             
-            {selectedNodeId && !sidebarCollapsed && (
+            {selectedNodeId && (
               <Card className="bg-gray-800 border-gray-700 mt-4 animate-scale-in">
                 <CardContent className="p-4">
                   <h3 className="text-lg font-medium text-white mb-4 flex items-center justify-between">
@@ -530,8 +514,8 @@ const CreateWorkflow = () => {
             )}
           </div>
           
-          <div 
-            className={`flex-1 bg-gray-850 border border-gray-700 rounded-lg overflow-hidden ${sidebarCollapsed ? 'ml-6' : ''}`}
+          {/* Canvas */}
+          <div className="flex-1 bg-gray-850 border border-gray-700 rounded-lg overflow-hidden" 
             style={{ height: 'calc(100vh - 210px)', minHeight: '500px' }}
             ref={reactFlowWrapper}
           >
