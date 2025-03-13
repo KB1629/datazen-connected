@@ -152,7 +152,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               className={`bg-sidebar-background border-r border-sidebar-border flex-shrink-0 flex flex-col transition-all duration-300 
                         md:relative ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
                         z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto
-                        ${sidebarCollapsed ? "md:w-20" : "md:w-64"}`}
+                        ${sidebarCollapsed ? "md:w-20" : "md:w-64"} relative`}
             >
               <nav className="mt-6 flex-1">
                 <ul className="space-y-1 px-4">
@@ -171,25 +171,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       </Link>
                     </li>
                   ))}
-                  <li className="mt-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full flex items-center justify-center space-x-3 px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
-                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    >
-                      {sidebarCollapsed ? (
-                        <PanelLeftOpen className="h-5 w-5" />
-                      ) : (
-                        <>
-                          <PanelLeftClose className="h-5 w-5" />
-                          <span>Collapse Sidebar</span>
-                        </>
-                      )}
-                    </Button>
-                  </li>
                 </ul>
               </nav>
+              
+              {/* Toggle button positioned at the right border */}
+              <div className="absolute right-0 top-60 z-30">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-5 rounded-l-md rounded-r-none border border-r-0 border-sidebar-border bg-sidebar-background text-sidebar-foreground opacity-30 hover:opacity-100 hover:text-white hover:bg-sidebar-accent transition-opacity"
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                  {sidebarCollapsed ? 
+                    <PanelLeftOpen className="h-4 w-4" /> : 
+                    <PanelLeftClose className="h-4 w-4" />
+                  }
+                </Button>
+              </div>
               
               {!sidebarCollapsed && (
                 <div className="p-4 border-t border-sidebar-border mt-auto">
