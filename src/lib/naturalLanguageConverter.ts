@@ -14,7 +14,8 @@ type QueryType =
   | 'aggregate_avg'
   | 'aggregate_min'
   | 'aggregate_max'
-  | 'join_tables';
+  | 'join_tables'
+  | 'select_specific';
 
 interface QueryPattern {
   pattern: RegExp;
@@ -64,7 +65,7 @@ const operatorKeywords: Record<string, RegExp[]> = {
   'contains': [/contains/i, /include/i, /has/i, /with/i],
   'starts_with': [/starts with/i, /begins with/i],
   'ends_with': [/ends with/i],
-  'greater_than': [/greater than/i, /more than/i, /higher than/i, />/i, /over/i],
+  'greater_than': [/greater than/i, /more than/i, /higher than/i, />/i, /over/i, /is greater/i, /greater/i],
   'less_than': [/less than/i, /lower than/i, /under/i, /</i, /below/i]
 };
 
@@ -95,6 +96,18 @@ const joinKeywords: RegExp[] = [
 
 // Pattern matching for different types of natural language queries
 const queryPatterns: QueryPattern[] = [
+  // Pattern for selecting specific fields
+  {
+    pattern: /(?:select|show|get|list|find) (?:the |)(?:customer |)(?:name|names)(?:s|) (?:of |from |in |)(?:all |)(?:the |)(?:customer|customers|client|clients)(?:s|) (?:where |with |that |who |)(?:have |has |)(?:the |)(?:number of |)order(?:s|) (?:is |are |)(?:greater than|more than|over|above|>=|>|equal to|=) (\d+)(?:\s|$|\.)/i,
+    queryType: 'select_specific',
+    generateSQL: (match, tableName) => {
+      const detectedTable = tableName || 'customers';
+      const value = match[1];
+      
+      return `SELECT name FROM ${detectedTable} WHERE orders >= ${value}`;
+    }
+  },
+
   // Pattern for selecting all records from a table
   {
     pattern: /show (?:me |all |)(?:the |)(.+?)(?:\s|$)/i,
@@ -208,6 +221,19 @@ const queryPatterns: QueryPattern[] = [
     }
   },
   
+  // Pattern for customers with orders greater than a value
+  {
+    pattern: /(?:find|show|get|list) (?:me |all |)(?:the |)(.+?) (?:where|with) (?:number of |)orders(?: is| are|) (?:greater than|more than|over|above|>|at least) (\d+)(?:\s|$|\.)/i,
+    queryType: 'filter_greater_than',
+    generateSQL: (match, tableName) => {
+      const tableHint = match[1];
+      const detectedTable = tableName || detectTableName(tableHint) || 'customers';
+      const value = match[2];
+      
+      return `SELECT * FROM ${detectedTable} WHERE orders >= ${value} ORDER BY orders DESC LIMIT 100`;
+    }
+  },
+  
   // Pattern for name searches (special case for common query)
   {
     pattern: /(?:find|show|get|list) (?:me |all |)(.+?) (?:with|where) (?:the |)name (?:is|=|equals|contains|includes|has|starts with|begins with) ['"]?(.+?)['"]?(?:\s|$|\.)/i,
@@ -282,6 +308,13 @@ function detectColumnName(tableName: string, text: string): string | null {
 
 // Function to convert natural language to SQL
 export function convertNaturalLanguageToSQL(query: string, selectedTable: string | null = null): string {
+  // Special case for customers with orders greater than or equal to a value
+  const ordersGreaterThanMatch = query.match(/(?:select|show|get|list|find) (?:the |)(?:customer |)(?:name|names)(?:s|) (?:from |of |in |)(?:all |)(?:the |)(?:customer|customers|client|clients)(?:s|) (?:where |with |that |who |)(?:have |has |)(?:the |)(?:number of |)order(?:s|) (?:is |are |)(?:greater than|more than|over|above|>=|>|equal to|=) (\d+)(?:\s|$|\.)/i);
+  if (ordersGreaterThanMatch) {
+    const value = ordersGreaterThanMatch[1];
+    return `SELECT name FROM customers WHERE orders >= ${value}`;
+  }
+  
   // Check for specific patterns
   for (const patternObj of queryPatterns) {
     const match = query.match(patternObj.pattern);
