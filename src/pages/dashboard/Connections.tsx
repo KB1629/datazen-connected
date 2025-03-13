@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Database, Filter, FileSpreadsheet, TableProperties, Code, Zap } from 'lucide-react';
+import { Search, Plus, Database, Filter, FileSpreadsheet, Code, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { externalDataSources } from '@/data/dataSources';
 import DataSourceCard from '@/components/etl/DataSourceCard';
@@ -89,6 +89,7 @@ const Connections = () => {
                     status="Connected"
                     updatedAt="2 hours ago"
                     icon={<Database className="h-8 w-8 text-blue-400" />}
+                    onClick={() => console.log('Clicked on Production DB')}
                   />
                   <DataSourceCard
                     title="Analytics Warehouse"
@@ -97,6 +98,7 @@ const Connections = () => {
                     status="Connected"
                     updatedAt="1 day ago"
                     icon={<Database className="h-8 w-8 text-yellow-400" />}
+                    onClick={() => console.log('Clicked on Analytics Warehouse')}
                   />
                   <DataSourceCard
                     title="Data Lake"
@@ -106,6 +108,7 @@ const Connections = () => {
                     error="Connection timeout"
                     updatedAt="5 days ago"
                     icon={<FileSpreadsheet className="h-8 w-8 text-blue-300" />}
+                    onClick={() => console.log('Clicked on Data Lake')}
                   />
                 </div>
               </div>
@@ -124,7 +127,8 @@ const Connections = () => {
                       <div className="flex items-center mb-3">
                         {source.icon}
                         <span className="ml-2 font-medium text-white">{source.name}</span>
-                        {source.beta && (
+                        {/* Beta badge will be rendered only if source has a beta property */}
+                        {source.hasOwnProperty('beta') && (source as any).beta && (
                           <Badge variant="outline" className="ml-2 text-xs border-blue-500 text-blue-400">
                             Beta
                           </Badge>

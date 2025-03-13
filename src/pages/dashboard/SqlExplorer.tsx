@@ -182,7 +182,7 @@ ORDER BY total_spent DESC`;
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-sidebar-accent text-gray-300 text-left">
-                      {Object.keys(queryResults[0] || {}).map((key) => (
+                      {queryResults.length > 0 && Object.keys(queryResults[0]).map((key) => (
                         <th key={key} className="p-2 border-b border-sidebar-border">
                           {key}
                         </th>
@@ -194,7 +194,7 @@ ORDER BY total_spent DESC`;
                       <tr key={i} className="text-gray-300 hover:bg-sidebar-accent/50">
                         {Object.values(row).map((value, j) => (
                           <td key={j} className="p-2 border-b border-sidebar-border">
-                            {value}
+                            {String(value)}
                           </td>
                         ))}
                       </tr>
