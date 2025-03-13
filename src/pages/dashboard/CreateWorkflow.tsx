@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -237,8 +236,8 @@ const CreateWorkflow = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto p-4">
+    <DashboardLayout showSidebar={false} backLink="/workflows" backText="Back to Workflows">
+      <div className="container mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white">
@@ -270,7 +269,7 @@ const CreateWorkflow = () => {
         </div>
         
         <div className="flex gap-6">
-          {/* Sidebar */}
+          {/* Components Sidebar */}
           <div className="w-64 flex-shrink-0 animate-fade-in">
             <Card className="bg-gray-800 border-gray-700">
               <CardContent className="p-4">

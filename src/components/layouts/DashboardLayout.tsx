@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -14,7 +15,8 @@ import {
   ChevronDown,
   Sparkles,
   FolderKanban,
-  FileCode
+  FileCode,
+  ChevronLeft
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -26,13 +28,29 @@ import {
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  /** Flag to indicate if the sidebar should be shown */
+  showSidebar?: boolean;
+  /** Optional back navigation link */
+  backLink?: string;
+  /** Optional back navigation text */
+  backText?: string;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
+  children, 
+  showSidebar = true,
+  backLink,
+  backText 
+}) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Close sidebar on mobile when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -53,21 +71,36 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <header className="bg-sidebar-background border-b border-sidebar-border py-4 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden text-sidebar-foreground hover:text-white"
-            >
-              {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+            {showSidebar && (
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden text-sidebar-foreground hover:text-white"
+              >
+                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            )}
             
-            <Link to="/dashboard" className="flex items-center space-x-2">
-              <div className="bg-primary rounded-md p-1.5">
-                <Database className="h-5 w-5 text-white" />
+            {backLink ? (
+              <div className="flex items-center">
+                <Button 
+                  variant="ghost" 
+                  className="mr-2 text-sidebar-foreground hover:text-white"
+                  onClick={() => navigate(backLink)}
+                >
+                  <ChevronLeft className="h-5 w-5 mr-1" />
+                  {backText || 'Back'}
+                </Button>
               </div>
-              <span className="font-bold text-xl text-white">
-                DataZen <span className="text-primary">Flow</span>
-              </span>
-            </Link>
+            ) : (
+              <Link to="/dashboard" className="flex items-center space-x-2">
+                <div className="bg-primary rounded-md p-1.5">
+                  <Database className="h-5 w-5 text-white" />
+                </div>
+                <span className="font-bold text-xl text-white">
+                  DataZen <span className="text-primary">Flow</span>
+                </span>
+              </Link>
+            )}
           </div>
           
           <div className="flex items-center space-x-4">
@@ -110,47 +143,51 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       </header>
       
       <div className="flex flex-1 overflow-hidden">
-        <aside
-          className={`bg-sidebar-background border-r border-sidebar-border w-64 flex-shrink-0 flex flex-col transition-all duration-300 
-                    md:relative ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
-                    z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto`}
-        >
-          <nav className="mt-6 flex-1">
-            <ul className="space-y-1 px-4">
-              {navItems.map((item) => (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
-                      location.pathname === item.path
-                        ? "bg-primary/20 text-primary"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
-                    }`}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-          
-          <div className="p-4 border-t border-sidebar-border mt-auto">
-            <Button 
-              className="w-full bg-primary hover:bg-primary/90 text-white"
-              onClick={() => navigate("/project/setup")}
+        {showSidebar && (
+          <>
+            <aside
+              className={`bg-sidebar-background border-r border-sidebar-border w-64 flex-shrink-0 flex flex-col transition-all duration-300 
+                        md:relative ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
+                        z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto`}
             >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Create Project
-            </Button>
-          </div>
-        </aside>
-        
-        {sidebarOpen && (
-          <div 
-            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
-            onClick={() => setSidebarOpen(false)}
-          />
+              <nav className="mt-6 flex-1">
+                <ul className="space-y-1 px-4">
+                  {navItems.map((item) => (
+                    <li key={item.path}>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
+                          location.pathname === item.path
+                            ? "bg-primary/20 text-primary"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+                        }`}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              
+              <div className="p-4 border-t border-sidebar-border mt-auto">
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 text-white"
+                  onClick={() => navigate("/project/setup")}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Create Project
+                </Button>
+              </div>
+            </aside>
+            
+            {sidebarOpen && (
+              <div 
+                className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+          </>
         )}
         
         <main className="flex-1 overflow-y-auto bg-background p-6">
