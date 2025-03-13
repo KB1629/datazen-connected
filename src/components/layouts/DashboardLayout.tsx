@@ -154,17 +154,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto
                         ${sidebarCollapsed ? "md:w-20" : "md:w-64"}`}
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute -right-10 top-3 hidden md:flex bg-sidebar-background text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              >
-                {sidebarCollapsed ? 
-                  <PanelLeftOpen className="h-5 w-5" /> : 
-                  <PanelLeftClose className="h-5 w-5" />
-                }
-              </Button>
+              <div className="absolute right-0 top-4 z-30 hidden md:block">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded-l-none rounded-r-md border border-l-0 border-sidebar-border bg-sidebar-background text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                >
+                  {sidebarCollapsed ? 
+                    <PanelLeftOpen className="h-4 w-4" /> : 
+                    <PanelLeftClose className="h-4 w-4" />
+                  }
+                </Button>
+              </div>
               
               <nav className="mt-6 flex-1">
                 <ul className="space-y-1 px-4">
