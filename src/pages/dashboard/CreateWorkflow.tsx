@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -38,30 +39,31 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-// Node data type interfaces with index signature to satisfy Record<string, unknown>
-interface BaseNodeData {
+// Node data type interfaces
+interface DatabaseSourceData {
   label: string;
-  [key: string]: unknown;
-}
-
-interface DatabaseSourceData extends BaseNodeData {
   connectionType: string;
   host: string;
   tables?: string[];
+  [key: string]: unknown;
 }
 
-interface TransformData extends BaseNodeData {
+interface TransformData {
+  label: string;
   query: string;
+  [key: string]: unknown;
 }
 
-interface DestinationData extends BaseNodeData {
+interface DestinationData {
+  label: string;
   connectionType: string;
   destination: string;
   tableName?: string;
+  [key: string]: unknown;
 }
 
 // Custom node components
-const DatabaseSourceNode = ({ data }: NodeProps<DatabaseSourceData>) => {
+const DatabaseSourceNode: React.FC<NodeProps<DatabaseSourceData>> = ({ data }) => {
   return (
     <div className="flex flex-col bg-blue-950 text-white p-4 rounded-lg min-w-[200px] border border-blue-400">
       <div className="flex items-center mb-2">
@@ -77,7 +79,7 @@ const DatabaseSourceNode = ({ data }: NodeProps<DatabaseSourceData>) => {
   );
 };
 
-const TransformNode = ({ data }: NodeProps<TransformData>) => {
+const TransformNode: React.FC<NodeProps<TransformData>> = ({ data }) => {
   return (
     <div className="flex flex-col bg-purple-950 text-white p-4 rounded-lg min-w-[200px] border border-purple-400">
       <div className="flex items-center mb-2">
@@ -92,7 +94,7 @@ const TransformNode = ({ data }: NodeProps<TransformData>) => {
   );
 };
 
-const DestinationNode = ({ data }: NodeProps<DestinationData>) => {
+const DestinationNode: React.FC<NodeProps<DestinationData>> = ({ data }) => {
   return (
     <div className="flex flex-col bg-green-950 text-white p-4 rounded-lg min-w-[200px] border border-green-400">
       <div className="flex items-center mb-2">
