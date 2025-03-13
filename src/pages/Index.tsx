@@ -1,51 +1,85 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { GithubIcon, Database, Zap, Link2 } from "lucide-react";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-4xl">
-        <h1 className="text-4xl font-bold text-center mb-8">Vanna Universe</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-4">
+      <div className="w-full max-w-5xl">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Vanna Connector</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            A powerful data connection and visualization tool for seamless data analysis
+          </p>
+        </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <Card className="border-2 border-blue-100 shadow-md hover:shadow-lg transition-all">
             <CardHeader>
-              <CardTitle>Welcome to Your Project</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-blue-500" />
+                <span>Data Integration</span>
+              </CardTitle>
               <CardDescription>
-                Your project has been successfully imported
+                Connect to multiple data sources effortlessly
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                This is a preview of your application. You can now start customizing and building on top of this foundation.
+                Vanna Connector enables you to connect, transform, and visualize data from various sources with intuitive interfaces and powerful processing capabilities.
               </p>
             </CardContent>
             <CardFooter>
-              <Button>Get Started</Button>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                Connect Data Source
+              </Button>
             </CardFooter>
           </Card>
           
-          <Card>
+          <Card className="border-2 border-purple-100 shadow-md hover:shadow-lg transition-all">
             <CardHeader>
-              <CardTitle>Project Features</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-purple-500" />
+                <span>Analytics Tools</span>
+              </CardTitle>
               <CardDescription>
-                Key components ready to use
+                Powerful analysis with minimal configuration
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <ul className="list-disc list-inside text-gray-600">
-                <li>React with TypeScript</li>
-                <li>Tailwind CSS for styling</li>
-                <li>Shadcn UI components</li>
-                <li>React Router for navigation</li>
-                <li>React Query for data fetching</li>
+            <CardContent className="space-y-3">
+              <p className="text-gray-600">
+                Our platform provides advanced analytics tools that help you gain insights from your data quickly:
+              </p>
+              <ul className="list-disc list-inside text-gray-600 pl-2">
+                <li>Interactive dashboards</li>
+                <li>AI-powered insights</li>
+                <li>Real-time visualization</li>
+                <li>Custom report generation</li>
+                <li>Collaborative workspaces</li>
               </ul>
             </CardContent>
             <CardFooter>
-              <Button variant="outline">Explore Docs</Button>
+              <Button variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50">
+                Explore Features
+              </Button>
             </CardFooter>
           </Card>
+        </div>
+        
+        <div className="mt-12 text-center">
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <a href="https://github.com/Abisheakraj/vanna-connector.git" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="flex items-center gap-2">
+                <GithubIcon className="h-4 w-4" />
+                GitHub Repository
+              </Button>
+            </a>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Documentation
+            </Button>
+          </div>
         </div>
       </div>
     </div>
