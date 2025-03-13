@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Workflow, ArrowRight, Activity, Server, LineChart, Clock, AlertCircle } from "lucide-react";
+import { Database, Workflow, ArrowRight, Activity, Server, LineChart, Clock, AlertCircle, FolderKanban, Plus } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -42,7 +42,7 @@ const Dashboard = () => {
         
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-gray-800 border-gray-700 shadow-lg">
+          <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-3 rounded-full bg-blue-900/50 text-blue-400">
@@ -56,7 +56,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-800 border-gray-700 shadow-lg">
+          <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-3 rounded-full bg-purple-900/50 text-purple-400">
@@ -70,7 +70,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-800 border-gray-700 shadow-lg">
+          <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-3 rounded-full bg-green-900/50 text-green-400">
@@ -84,7 +84,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-800 border-gray-700 shadow-lg">
+          <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-3 rounded-full bg-yellow-900/50 text-yellow-400">
@@ -97,6 +97,112 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Projects Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">Your Projects</h2>
+            <Link to="/projects">
+              <Button variant="ghost" className="text-gray-400 hover:text-white">
+                View all <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 hover:bg-gray-800/90 transition-all">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 rounded-full bg-blue-900/30 flex items-center justify-center">
+                    <FolderKanban className="h-5 w-5 text-blue-400" />
+                  </div>
+                </div>
+                <CardTitle className="text-white text-lg">E-commerce Analytics</CardTitle>
+                <CardDescription className="text-gray-400">
+                  ETL pipeline for e-commerce data analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <div className="flex items-center text-gray-400 text-sm space-x-4">
+                  <div className="flex items-center">
+                    <Database className="h-4 w-4 mr-1" />
+                    <span>8 tables</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>2 days ago</span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/workflows/create?project=ecommerce-analytics" className="w-full">
+                  <Button variant="outline" className="w-full border-gray-700 text-gray-300 hover:bg-gray-700">
+                    Open Project
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+            
+            <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 hover:bg-gray-800/90 transition-all">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 rounded-full bg-purple-900/30 flex items-center justify-center">
+                    <FolderKanban className="h-5 w-5 text-purple-400" />
+                  </div>
+                </div>
+                <CardTitle className="text-white text-lg">Customer Segmentation</CardTitle>
+                <CardDescription className="text-gray-400">
+                  ML-ready data pipeline for customer analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <div className="flex items-center text-gray-400 text-sm space-x-4">
+                  <div className="flex items-center">
+                    <Database className="h-4 w-4 mr-1" />
+                    <span>5 tables</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>1 week ago</span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/workflows/create?project=customer-segmentation" className="w-full">
+                  <Button variant="outline" className="w-full border-gray-700 text-gray-300 hover:bg-gray-700">
+                    Open Project
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+            
+            <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 hover:bg-gray-800/90 transition-all group">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 rounded-full bg-green-900/30 flex items-center justify-center">
+                    <Plus className="h-5 w-5 text-green-400" />
+                  </div>
+                </div>
+                <CardTitle className="text-white text-lg">Create New Project</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Start building a new ETL workflow
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <div className="text-gray-400 text-sm">
+                  Connect to databases, define transformations, and visualize your data.
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/project/setup" className="w-full">
+                  <Button className="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 group-hover:bg-primary group-hover:text-white transition-colors">
+                    Get Started
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          </div>
         </div>
         
         {/* Recent Workflows */}
@@ -112,7 +218,7 @@ const Dashboard = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {recentWorkflows.map((workflow) => (
-              <Card key={workflow.id} className="bg-gray-800 border-gray-700 shadow-lg">
+              <Card key={workflow.id} className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 transition-all">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-white text-lg">{workflow.name}</CardTitle>
@@ -167,7 +273,7 @@ const Dashboard = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {recentConnections.map((connection) => (
-              <Card key={connection.id} className="bg-gray-800 border-gray-700 shadow-lg">
+              <Card key={connection.id} className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 transition-all">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-white text-lg">{connection.name}</CardTitle>

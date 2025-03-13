@@ -13,7 +13,8 @@ import {
   LayoutDashboard, 
   User,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  FolderKanban
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -40,6 +41,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   const navItems = [
     { path: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Dashboard" },
+    { path: "/projects", icon: <FolderKanban className="h-5 w-5" />, label: "Projects" },
     { path: "/connections", icon: <Database className="h-5 w-5" />, label: "Connections" },
     { path: "/workflows", icon: <Workflow className="h-5 w-5" />, label: "Workflows" },
     { path: "/settings", icon: <Settings className="h-5 w-5" />, label: "Settings" },
@@ -76,10 +78,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               variant="outline" 
               size="sm" 
               className="hidden md:flex border-primary/20 bg-primary/10 text-primary hover:bg-primary/20"
-              onClick={() => navigate("/workflows/create")}
+              onClick={() => navigate("/project/setup")}
             >
               <PlusCircle className="h-4 w-4 mr-2" />
-              New Workflow
+              New Project
             </Button>
             
             <DropdownMenu>
@@ -141,10 +143,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="p-4 border-t border-sidebar-border mt-auto">
             <Button 
               className="w-full bg-primary hover:bg-primary/90 text-white"
-              onClick={() => navigate("/workflows/create")}
+              onClick={() => navigate("/project/setup")}
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              Create Workflow
+              Create Project
             </Button>
           </div>
         </aside>
