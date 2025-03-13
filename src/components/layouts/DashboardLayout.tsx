@@ -152,19 +152,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               className={`bg-sidebar-background border-r border-sidebar-border flex-shrink-0 flex flex-col transition-all duration-300 
                         md:relative ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
                         z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto
-                        ${sidebarCollapsed ? "md:w-20" : "md:w-64"}`}
+                        ${sidebarCollapsed ? "md:w-20" : "md:w-64"} relative`}
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute -right-10 top-3 hidden md:flex bg-sidebar-background text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              >
-                {sidebarCollapsed ? 
-                  <PanelLeftOpen className="h-5 w-5" /> : 
-                  <PanelLeftClose className="h-5 w-5" />
-                }
-              </Button>
+              <div className="absolute h-full w-0 right-0 flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute -right-4 bg-sidebar-background border border-sidebar-border shadow-md rounded-full text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                >
+                  {sidebarCollapsed ? 
+                    <PanelLeftOpen className="h-4 w-4" /> : 
+                    <PanelLeftClose className="h-4 w-4" />
+                  }
+                </Button>
+              </div>
               
               <nav className="mt-6 flex-1">
                 <ul className="space-y-1 px-4">
@@ -172,7 +174,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     <li key={item.path}>
                       <Link
                         to={item.path}
-                        className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
+                        className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-3"} px-3 py-2 rounded-md transition-colors ${
                           location.pathname === item.path
                             ? "bg-primary/20 text-primary"
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
