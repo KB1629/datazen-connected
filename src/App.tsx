@@ -15,6 +15,7 @@ import CreateWorkflow from "./pages/dashboard/CreateWorkflow";
 import Settings from "./pages/dashboard/Settings";
 import Projects from "./pages/dashboard/Projects";
 import ProjectSetup from "./pages/dashboard/ProjectSetup";
+import SqlExplorer from "./pages/dashboard/SqlExplorer";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
             <Route path="/project/setup" element={<ProtectedRoute><ProjectSetup /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/sql-explorer" element={<ProtectedRoute><SqlExplorer /></ProtectedRoute>} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

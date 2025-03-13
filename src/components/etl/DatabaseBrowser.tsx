@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Search, Database, MessageSquare, Code, Table as TableIcon, LineChart, Loader2 } from 'lucide-react';
+import { Search, Database, MessageSquare, Code, Table as TableIcon, LineChart, Loader2, LayoutList, LayoutGrid } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
@@ -27,6 +27,8 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
   const [isGeneratingSQL, setIsGeneratingSQL] = useState(false);
   const [generatedSQL, setGeneratedSQL] = useState<string | null>(null);
   const [isRunningQuery, setIsRunningQuery] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
 
   const filteredTables = tables.filter(table => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -103,6 +105,38 @@ LIMIT 10;`;
     }
   };
 
+  const handleTableSelect = (tableName: string) => {
+    setSelectedTableName(tableName);
+    onSelectTable(tableName);
+    
+    // Mock data for the selected table
+    setTimeout(() => {
+      if (tableName === 'customers') {
+        setResults([
+          { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
+          { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' },
+          { customer_id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', created_at: '2023-01-17 11:45:00' },
+          { customer_id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '555-3456', address: '101 Elm St', created_at: '2023-01-18 16:10:00' },
+          { customer_id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', created_at: '2023-01-19 10:05:00' }
+        ]);
+      } else if (tableName === 'orders') {
+        setResults([
+          { order_id: 1, customer_id: 1, total: 99.99, status: 'completed', created_at: '2023-01-15 10:30:00' },
+          { order_id: 2, customer_id: 2, total: 149.99, status: 'processing', created_at: '2023-01-16 15:20:00' },
+          { order_id: 3, customer_id: 3, total: 29.99, status: 'completed', created_at: '2023-01-17 12:45:00' },
+          { order_id: 4, customer_id: 1, total: 49.99, status: 'shipped', created_at: '2023-01-18 17:10:00' },
+          { order_id: 5, customer_id: 4, total: 199.99, status: 'completed', created_at: '2023-01-19 11:05:00' }
+        ]);
+      } else {
+        setResults([
+          { id: 1, name: 'Item 1', description: 'Description for item 1', created_at: '2023-01-15 09:30:00' },
+          { id: 2, name: 'Item 2', description: 'Description for item 2', created_at: '2023-01-16 14:20:00' },
+          { id: 3, name: 'Item 3', description: 'Description for item 3', created_at: '2023-01-17 11:45:00' }
+        ]);
+      }
+    }, 500);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-col lg:flex-row gap-6 h-full">
@@ -120,17 +154,37 @@ LIMIT 10;`;
                 />
               </div>
               
-              <h3 className="text-sm font-medium text-gray-300 mb-2 flex items-center">
-                <Database className="h-4 w-4 mr-2" />
-                Tables
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-gray-300 flex items-center">
+                  <Database className="h-4 w-4 mr-2" />
+                  Tables
+                </h3>
+                <div className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 ${viewMode === 'list' ? 'text-primary' : 'text-gray-400'}`}
+                    onClick={() => setViewMode('list')}
+                  >
+                    <LayoutList className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 ${viewMode === 'grid' ? 'text-primary' : 'text-gray-400'}`}
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               
               <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto">
                 {filteredTables.map((table) => (
                   <div
                     key={table.name}
-                    className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-gray-700 cursor-pointer"
-                    onClick={() => onSelectTable(table.name)}
+                    className={`flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-gray-700 cursor-pointer ${selectedTableName === table.name ? 'bg-gray-700' : ''}`}
+                    onClick={() => handleTableSelect(table.name)}
                   >
                     <div className="flex items-center">
                       <TableIcon className="h-4 w-4 mr-2 text-gray-400" />
