@@ -38,9 +38,10 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-// Node data type interfaces
+// Node data type interfaces with index signature to satisfy Record<string, unknown>
 interface BaseNodeData {
   label: string;
+  [key: string]: unknown;
 }
 
 interface DatabaseSourceData extends BaseNodeData {
@@ -59,21 +60,8 @@ interface DestinationData extends BaseNodeData {
   tableName?: string;
 }
 
-// Custom node props
-interface DatabaseSourceNodeProps extends NodeProps {
-  data: DatabaseSourceData;
-}
-
-interface TransformNodeProps extends NodeProps {
-  data: TransformData;
-}
-
-interface DestinationNodeProps extends NodeProps {
-  data: DestinationData;
-}
-
-// Node components
-const DatabaseSourceNode = ({ data }: DatabaseSourceNodeProps) => {
+// Custom node components
+const DatabaseSourceNode = ({ data }: NodeProps<DatabaseSourceData>) => {
   return (
     <div className="flex flex-col bg-blue-950 text-white p-4 rounded-lg min-w-[200px] border border-blue-400">
       <div className="flex items-center mb-2">
@@ -89,7 +77,7 @@ const DatabaseSourceNode = ({ data }: DatabaseSourceNodeProps) => {
   );
 };
 
-const TransformNode = ({ data }: TransformNodeProps) => {
+const TransformNode = ({ data }: NodeProps<TransformData>) => {
   return (
     <div className="flex flex-col bg-purple-950 text-white p-4 rounded-lg min-w-[200px] border border-purple-400">
       <div className="flex items-center mb-2">
@@ -104,7 +92,7 @@ const TransformNode = ({ data }: TransformNodeProps) => {
   );
 };
 
-const DestinationNode = ({ data }: DestinationNodeProps) => {
+const DestinationNode = ({ data }: NodeProps<DestinationData>) => {
   return (
     <div className="flex flex-col bg-green-950 text-white p-4 rounded-lg min-w-[200px] border border-green-400">
       <div className="flex items-center mb-2">
