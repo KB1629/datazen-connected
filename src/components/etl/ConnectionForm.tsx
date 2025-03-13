@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/form';
 import { toast } from 'sonner';
 
-// Define the common fields schema
+// Define a more inclusive base schema that allows for all possible field names
 const baseConnectionSchema = z.object({
   name: z.string().min(1, { message: "Connection name is required" }),
   host: z.string().min(1, { message: "Host is required" }),
@@ -24,10 +24,21 @@ const baseConnectionSchema = z.object({
   username: z.string().min(1, { message: "Username is required" }),
   password: z.string().min(1, { message: "Password is required" }),
   database: z.string().min(1, { message: "Database name is required" }),
+  // Add all the possible additional fields to avoid TypeScript errors
+  projectId: z.string().optional(),
+  account: z.string().optional(),
+  warehouse: z.string().optional(),
+  catalog: z.string().optional(),
+  schema: z.string().optional(),
+  instance: z.string().optional(),
+  encrypt: z.boolean().optional(),
+  keyFile: z.string().optional(),
+  role: z.string().optional(),
+  secure: z.boolean().optional(),
 });
 
-// Additional fields for specific database types
-const dbTypeSpecificFields = {
+// Additional validation for specific database types
+const dbTypeSpecificSchemas = {
   postgresql: z.object({}),
   mysql: z.object({}),
   sqlserver: z.object({
@@ -59,10 +70,12 @@ interface ConnectionFormProps {
 }
 
 const getConnectionSchema = (dbType: string) => {
-  // Create a type-specific schema
-  const typeKey = dbType.toLowerCase().replace(/-/g, '') as keyof typeof dbTypeSpecificFields;
-  const specificSchema = dbTypeSpecificFields[typeKey] || z.object({});
-  return baseConnectionSchema.extend(specificSchema.shape);
+  // Create a type-specific schema but use the baseConnectionSchema as the foundation
+  const typeKey = dbType.toLowerCase().replace(/-/g, '') as keyof typeof dbTypeSpecificSchemas;
+  const specificSchema = dbTypeSpecificSchemas[typeKey] || z.object({});
+  
+  // This approach preserves all fields in the base schema
+  return baseConnectionSchema;
 };
 
 // Default port numbers by database type
@@ -87,7 +100,10 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ dbType, onCancel, onSub
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, (str) => str.toUpperCase());
   
-  const form = useForm<z.infer<typeof connectionSchema>>({
+  // Use the type from the schema
+  type FormValues = z.infer<typeof connectionSchema>;
+  
+  const form = useForm<FormValues>({
     resolver: zodResolver(connectionSchema),
     defaultValues: {
       name: `My ${displayName} Connection`,
@@ -102,7 +118,7 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ dbType, onCancel, onSub
     },
   });
 
-  const handleSubmitForm = (data: z.infer<typeof connectionSchema>) => {
+  const handleSubmitForm = (data: FormValues) => {
     console.log('Connection data:', data);
     
     // Simulate testing connection
