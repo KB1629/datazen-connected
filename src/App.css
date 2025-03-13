@@ -1,42 +1,60 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-md bg-white/5 border border-white/10 shadow-lg;
   }
-  to {
-    transform: rotate(360deg);
+  
+  .glow-effect {
+    @apply animate-glow;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  
+  .btn-primary-glow {
+    @apply relative overflow-hidden;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  
+  .btn-primary-glow::after {
+    content: '';
+    @apply absolute inset-0 rounded-md bg-primary/20 opacity-0 transition-opacity duration-500;
+  }
+  
+  .btn-primary-glow:hover::after {
+    @apply opacity-100;
+  }
+  
+  .db-connection-card {
+    @apply relative overflow-hidden transition-all duration-300 bg-card hover:bg-card/90 border border-border rounded-lg p-5;
+  }
+  
+  .db-connection-card:hover {
+    @apply shadow-md shadow-primary/10 border-primary/20;
+  }
+  
+  .db-connection-card::before {
+    content: '';
+    @apply absolute top-0 left-0 w-1 h-0 bg-primary transition-all duration-300;
+  }
+  
+  .db-connection-card:hover::before {
+    @apply h-full;
+  }
+  
+  .search-input {
+    @apply bg-muted/50 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/30;
+  }
+  
+  .tab-button {
+    @apply px-4 py-2 rounded-md transition-colors duration-200;
+  }
+  
+  .tab-button.active {
+    @apply bg-primary/20 text-primary font-medium;
+  }
+  
+  .tab-button:not(.active) {
+    @apply text-muted-foreground hover:bg-muted/50 hover:text-foreground;
+  }
 }

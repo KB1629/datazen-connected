@@ -12,7 +12,8 @@ import {
   X, 
   LayoutDashboard, 
   User,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -45,24 +46,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Top Navigation */}
-      <header className="bg-gray-800 border-b border-gray-700 py-4 px-6">
+      <header className="bg-sidebar-background border-b border-sidebar-border py-4 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden text-gray-300 hover:text-white"
+              className="md:hidden text-sidebar-foreground hover:text-white"
             >
               {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
             
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <Database className="h-6 w-6 text-blue-400" />
-              <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                DataZen Flow
+              <div className="bg-primary rounded-md p-1.5">
+                <Database className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-bold text-xl text-white">
+                DataZen <span className="text-primary">Flow</span>
               </span>
             </Link>
           </div>
@@ -72,7 +75,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <Button 
               variant="outline" 
               size="sm" 
-              className="hidden md:flex border-blue-500 text-blue-400 hover:bg-blue-950"
+              className="hidden md:flex border-primary/20 bg-primary/10 text-primary hover:bg-primary/20"
               onClick={() => navigate("/workflows/create")}
             >
               <PlusCircle className="h-4 w-4 mr-2" />
@@ -83,19 +86,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="flex items-center space-x-2 text-gray-300 hover:text-white hover:bg-gray-700"
+                  className="flex items-center space-x-2 text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
                 >
-                  <User className="h-5 w-5" />
+                  <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
                   <span className="hidden md:inline">{user?.name || "User"}</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-gray-300">
-                <DropdownMenuItem className="hover:bg-gray-700 hover:text-white cursor-pointer" onClick={() => navigate("/settings")}>
+              <DropdownMenuContent align="end" className="bg-sidebar-accent border-sidebar-border text-sidebar-foreground">
+                <DropdownMenuItem className="hover:bg-sidebar-background hover:text-white cursor-pointer" onClick={() => navigate("/settings")}>
                   <Settings className="h-4 w-4 mr-2" />
                   <span>Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="hover:bg-gray-700 hover:text-white cursor-pointer" onClick={handleLogout}>
+                <DropdownMenuItem className="hover:bg-sidebar-background hover:text-white cursor-pointer" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   <span>Logout</span>
                 </DropdownMenuItem>
@@ -109,7 +114,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
-          className={`bg-gray-800 border-r border-gray-700 w-64 flex-shrink-0 flex flex-col transition-all duration-300 
+          className={`bg-sidebar-background border-r border-sidebar-border w-64 flex-shrink-0 flex flex-col transition-all duration-300 
                     md:relative ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
                     z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto`}
         >
@@ -121,8 +126,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     to={item.path}
                     className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
                       location.pathname === item.path
-                        ? "bg-blue-900 text-blue-100"
-                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                        ? "bg-primary/20 text-primary"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
                     }`}
                   >
                     {item.icon}
@@ -133,14 +138,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </ul>
           </nav>
           
-          <div className="p-4 border-t border-gray-700 mt-auto">
+          <div className="p-4 border-t border-sidebar-border mt-auto">
             <Button 
-              variant="secondary" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-primary hover:bg-primary/90 text-white"
               onClick={() => navigate("/workflows/create")}
             >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              New Workflow
+              <Sparkles className="h-4 w-4 mr-2" />
+              Create Workflow
             </Button>
           </div>
         </aside>
@@ -154,7 +158,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         )}
         
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto bg-gray-900 p-6">
+        <main className="flex-1 overflow-y-auto bg-background p-6">
           {children}
         </main>
       </div>
