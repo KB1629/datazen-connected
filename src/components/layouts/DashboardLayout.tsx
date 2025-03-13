@@ -154,17 +154,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto
                         ${sidebarCollapsed ? "md:w-20" : "md:w-64"} relative`}
             >
-              {/* Rail for toggling sidebar */}
-              <div 
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-e-resize hover:bg-sidebar-border/50 group z-10"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              >
-                <div className="absolute hidden group-hover:flex items-center justify-center top-1/2 -translate-y-1/2 -right-3 h-6 w-6 bg-sidebar-background border border-sidebar-border rounded-full text-sidebar-foreground shadow-md transition-all duration-200 overflow-hidden">
+              <div className="absolute h-full w-0 right-0 flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute -right-4 bg-sidebar-background border border-sidebar-border shadow-md rounded-full text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                >
                   {sidebarCollapsed ? 
-                    <PanelLeftOpen className="h-3 w-3" /> : 
-                    <PanelLeftClose className="h-3 w-3" />
+                    <PanelLeftOpen className="h-4 w-4" /> : 
+                    <PanelLeftClose className="h-4 w-4" />
                   }
-                </div>
+                </Button>
               </div>
               
               <nav className="mt-6 flex-1">
@@ -218,4 +219,3 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 };
 
 export default DashboardLayout;
-
