@@ -89,7 +89,7 @@ export const externalDataSources = [
     id: 'sql-server',
     name: 'SQL Server',
     icon: <Database className="w-5 h-5 text-red-400" />,
-    description: 'Microsoft's enterprise database solution.',
+    description: "Microsoft's enterprise database solution.",
   },
   {
     id: 'clickhouse',
