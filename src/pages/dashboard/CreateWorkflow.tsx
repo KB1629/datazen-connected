@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -31,12 +30,50 @@ import {
   Panel, 
   MarkerType,
   Position,
-  Connection
+  Connection,
+  Node,
+  NodeProps,
+  Edge,
+  NodeTypes
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+// Node data type interfaces
+interface BaseNodeData {
+  label: string;
+}
+
+interface DatabaseSourceData extends BaseNodeData {
+  connectionType: string;
+  host: string;
+  tables?: string[];
+}
+
+interface TransformData extends BaseNodeData {
+  query: string;
+}
+
+interface DestinationData extends BaseNodeData {
+  connectionType: string;
+  destination: string;
+  tableName?: string;
+}
+
+// Custom node props
+interface DatabaseSourceNodeProps extends NodeProps {
+  data: DatabaseSourceData;
+}
+
+interface TransformNodeProps extends NodeProps {
+  data: TransformData;
+}
+
+interface DestinationNodeProps extends NodeProps {
+  data: DestinationData;
+}
+
 // Node components
-const DatabaseSourceNode = ({ data }) => {
+const DatabaseSourceNode = ({ data }: DatabaseSourceNodeProps) => {
   return (
     <div className="flex flex-col bg-blue-950 text-white p-4 rounded-lg min-w-[200px] border border-blue-400">
       <div className="flex items-center mb-2">
@@ -52,7 +89,7 @@ const DatabaseSourceNode = ({ data }) => {
   );
 };
 
-const TransformNode = ({ data }) => {
+const TransformNode = ({ data }: TransformNodeProps) => {
   return (
     <div className="flex flex-col bg-purple-950 text-white p-4 rounded-lg min-w-[200px] border border-purple-400">
       <div className="flex items-center mb-2">
@@ -67,7 +104,7 @@ const TransformNode = ({ data }) => {
   );
 };
 
-const DestinationNode = ({ data }) => {
+const DestinationNode = ({ data }: DestinationNodeProps) => {
   return (
     <div className="flex flex-col bg-green-950 text-white p-4 rounded-lg min-w-[200px] border border-green-400">
       <div className="flex items-center mb-2">
@@ -84,7 +121,7 @@ const DestinationNode = ({ data }) => {
 };
 
 // Node types mapping
-const nodeTypes = {
+const nodeTypes: NodeTypes = {
   databaseSource: DatabaseSourceNode,
   transform: TransformNode,
   destination: DestinationNode
@@ -94,12 +131,12 @@ const CreateWorkflow = () => {
   const [workflowName, setWorkflowName] = useState('New Workflow');
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeDragging, setNodeDragging] = useState(false);
-  const reactFlowWrapper = useRef(null);
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodeIdCounter = useRef(1);
 
-  const onConnect = useCallback((params) => {
+  const onConnect = useCallback((params: Connection) => {
     setEdges((eds) => addEdge({
       ...params,
       type: 'smoothstep',
@@ -111,13 +148,13 @@ const CreateWorkflow = () => {
     }, eds));
   }, [setEdges]);
 
-  const onDragOver = useCallback((event) => {
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
   const onDrop = useCallback(
-    (event) => {
+    (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
 
       const type = event.dataTransfer.getData('application/reactflow');
@@ -126,50 +163,60 @@ const CreateWorkflow = () => {
         return;
       }
 
+      if (!reactFlowWrapper.current) return;
+
       const position = reactFlowWrapper.current.getBoundingClientRect();
       const x = event.clientX - position.left;
       const y = event.clientY - position.top;
       
-      let newNode = {
-        id: `${type}_${nodeIdCounter.current++}`,
-        type: type,
-        position: { x, y },
-        data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${nodeIdCounter.current}` },
-      };
-
-      // Add specific data based on node type
       if (type === 'databaseSource') {
-        newNode.data = {
-          ...newNode.data,
-          connectionType: 'PostgreSQL',
-          host: 'db.neon.tech',
-          tables: ['users', 'products']
+        const newNode: Node<DatabaseSourceData> = {
+          id: `${type}_${nodeIdCounter.current++}`,
+          type,
+          position: { x, y },
+          data: { 
+            label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${nodeIdCounter.current}`,
+            connectionType: 'PostgreSQL',
+            host: 'db.neon.tech',
+            tables: ['users', 'products']
+          },
+          targetPosition: Position.Left,
+          sourcePosition: Position.Right,
         };
-        newNode.targetPosition = Position.Left;
-        newNode.sourcePosition = Position.Right;
+        setNodes((nds) => nds.concat(newNode));
       } else if (type === 'transform') {
-        newNode.data = {
-          ...newNode.data,
-          query: 'SELECT * FROM users WHERE status = "active"'
+        const newNode: Node<TransformData> = {
+          id: `${type}_${nodeIdCounter.current++}`,
+          type,
+          position: { x, y },
+          data: { 
+            label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${nodeIdCounter.current}`,
+            query: 'SELECT * FROM users WHERE status = "active"'
+          },
+          targetPosition: Position.Left,
+          sourcePosition: Position.Right,
         };
-        newNode.targetPosition = Position.Left;
-        newNode.sourcePosition = Position.Right;
+        setNodes((nds) => nds.concat(newNode));
       } else if (type === 'destination') {
-        newNode.data = {
-          ...newNode.data,
-          connectionType: 'MySQL',
-          destination: 'analytics_db',
-          tableName: 'active_users'
+        const newNode: Node<DestinationData> = {
+          id: `${type}_${nodeIdCounter.current++}`,
+          type,
+          position: { x, y },
+          data: { 
+            label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${nodeIdCounter.current}`,
+            connectionType: 'MySQL',
+            destination: 'analytics_db',
+            tableName: 'active_users'
+          },
+          targetPosition: Position.Left,
         };
-        newNode.targetPosition = Position.Left;
+        setNodes((nds) => nds.concat(newNode));
       }
-
-      setNodes((nds) => nds.concat(newNode));
     },
     [setNodes]
   );
   
-  const onNodeClick = useCallback((_, node) => {
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     setSelectedNodeId(node.id);
   }, []);
 
@@ -177,7 +224,7 @@ const CreateWorkflow = () => {
     setSelectedNodeId(null);
   }, []);
 
-  const onDragStart = (event, nodeType) => {
+  const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
     setNodeDragging(true);
