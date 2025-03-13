@@ -17,7 +17,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-// Mock database tables with schema information
 const mockTables = [
   { 
     name: 'customers', 
@@ -78,7 +77,6 @@ const mockTables = [
   },
 ];
 
-// Mock data for each table
 const mockTableData = {
   customers: [
     { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', orders: 5, total_spent: 529.95 },
@@ -117,115 +115,135 @@ const mockTableData = {
   ]
 };
 
-// Mock natural language queries and their corresponding SQL translations
-const mockNLTranslations = {
-  "find customers who spent more than 100": 
-    `SELECT *
+const nlPatterns = [
+  {
+    pattern: /customer.*spent more than \d+/i,
+    sqlTemplate: (match: string) => {
+      const amount = match.match(/\d+/)?.[0] || '100';
+      return `SELECT *
 FROM customers
-WHERE total_spent > 100
+WHERE total_spent > ${amount}
 ORDER BY total_spent DESC
-LIMIT 10`,
-
-  "show all orders from customer john": 
-    `SELECT o.*
+LIMIT 10`;
+    }
+  },
+  {
+    pattern: /show.*orders.*from customer (\w+)/i,
+    sqlTemplate: (match: string) => {
+      const customerName = match.match(/from customer (\w+)/i)?.[1]?.toLowerCase() || 'john';
+      return `SELECT o.*
 FROM orders o
 JOIN customers c ON o.customer_id = c.id
-WHERE c.name LIKE '%john%'
-ORDER BY o.date DESC`,
-
-  "list products with low stock": 
-    `SELECT id, name, category, price, stock
+WHERE c.name LIKE '%${customerName}%'
+ORDER BY o.date DESC`;
+    }
+  },
+  {
+    pattern: /.*products.*low stock/i,
+    sqlTemplate: () => {
+      return `SELECT id, name, category, price, stock
 FROM products
 WHERE stock < 50
-ORDER BY stock ASC`,
-
-  "get sales representatives": 
-    `SELECT name, position, department, hire_date
-FROM employees
-WHERE position LIKE '%Sales%'
-ORDER BY hire_date ASC`,
-
-  "which products are in the electronics category": 
-    `SELECT * 
+ORDER BY stock ASC`;
+    }
+  },
+  {
+    pattern: /customer_id.*status completed.*orders/i,
+    sqlTemplate: () => {
+      return `SELECT customer_id, date, total
+FROM orders
+WHERE status = 'completed'
+ORDER BY date DESC`;
+    }
+  },
+  {
+    pattern: /completed orders/i,
+    sqlTemplate: () => {
+      return `SELECT *
+FROM orders
+WHERE status = 'completed'
+ORDER BY date DESC`;
+    }
+  },
+  {
+    pattern: /electronics.*products/i,
+    sqlTemplate: () => {
+      return `SELECT * 
 FROM products
 WHERE category = 'Electronics'
-ORDER BY price DESC`,
-
-  "select names starting with letter j": 
-    `SELECT id, name, email
-FROM customers
-WHERE name LIKE 'J%'
-ORDER BY name ASC`,
-    
-  "show total sales by product": 
-    `SELECT p.name, SUM(oi.quantity) as total_sold, SUM(oi.price) as revenue
+ORDER BY price DESC`;
+    }
+  },
+  {
+    pattern: /sales representatives/i,
+    sqlTemplate: () => {
+      return `SELECT name, position, department, hire_date
+FROM employees
+WHERE position LIKE '%Sales%'
+ORDER BY hire_date ASC`;
+    }
+  },
+  {
+    pattern: /total sales by product/i,
+    sqlTemplate: () => {
+      return `SELECT p.name, SUM(oi.quantity) as total_sold, SUM(oi.price) as revenue
 FROM order_items oi
 JOIN products p ON oi.product_id = p.id
 GROUP BY p.name
-ORDER BY revenue DESC`
-};
+ORDER BY revenue DESC`;
+    }
+  }
+];
 
-// Mock database engine to simulate SQL query execution
 class MockDatabaseEngine {
-  constructor(mockData) {
-    this.tables = mockData;
+  private tableData: Record<string, any[]>;
+
+  constructor(tableData: Record<string, any[]>) {
+    this.tableData = tableData;
   }
 
-  executeQuery(query) {
+  executeQuery(query: string) {
     console.log('Executing query:', query);
     const queryLower = query.toLowerCase();
     
-    // Simple lexer to tokenize the query
-    const tokens = queryLower.split(/\s+/);
-    
     try {
-      // Basic SELECT query parser
-      if (tokens.includes('select')) {
-        // Check if it's a JOIN query
-        if (tokens.includes('join')) {
+      if (queryLower.includes('select')) {
+        if (queryLower.includes('join')) {
           return this.handleJoinQuery(queryLower);
         }
         
-        // Extract the table name (FROM clause)
-        const fromIndex = tokens.indexOf('from');
-        if (fromIndex === -1 || fromIndex + 1 >= tokens.length) {
+        const fromMatch = queryLower.match(/from\s+(\w+)/i);
+        if (!fromMatch) {
           throw new Error('Invalid query: Missing FROM clause or table name');
         }
         
-        const tableName = tokens[fromIndex + 1].replace(/[;,]/g, '');
+        const tableName = fromMatch[1];
         
-        // Ensure the table exists
-        if (!this.tables[tableName]) {
+        if (!this.tableData[tableName]) {
           throw new Error(`Table "${tableName}" not found`);
         }
         
-        let result = [...this.tables[tableName]];
+        let result = [...this.tableData[tableName]];
         
-        // Apply WHERE clause if present
-        if (tokens.includes('where')) {
+        if (queryLower.includes('where')) {
           result = this.applyWhereClause(result, queryLower);
         }
         
-        // Apply ORDER BY clause if present
-        if (tokens.includes('order') && tokens.includes('by')) {
+        if (queryLower.includes('order by')) {
           result = this.applyOrderByClause(result, queryLower);
         }
         
-        // Apply LIMIT clause if present
-        if (tokens.includes('limit')) {
-          const limitIndex = tokens.indexOf('limit');
-          if (limitIndex + 1 < tokens.length) {
-            const limit = parseInt(tokens[limitIndex + 1]);
-            if (!isNaN(limit)) {
-              result = result.slice(0, limit);
-            }
+        const limitMatch = queryLower.match(/limit\s+(\d+)/i);
+        if (limitMatch) {
+          const limit = parseInt(limitMatch[1], 10);
+          if (!isNaN(limit)) {
+            result = result.slice(0, limit);
           }
         }
         
         return result;
       }
       
-      // Handle other query types (not implemented in this mock)
       throw new Error('Only SELECT queries are supported in this demo');
       
     } catch (error) {
@@ -234,118 +252,87 @@ class MockDatabaseEngine {
     }
   }
   
-  applyWhereClause(data, query) {
-    // Very simple WHERE clause parser - only handles basic conditions
-    const whereIndex = query.indexOf('where');
-    if (whereIndex === -1) return data;
+  applyWhereClause(data: any[], query: string) {
+    const whereMatch = query.match(/where\s+(.*?)(?:order by|limit|$)/i);
+    if (!whereMatch) return data;
     
-    let whereClause = query.substring(whereIndex + 5);
-    
-    // Extract the condition before ORDER BY or LIMIT if present
-    if (whereClause.includes('order by')) {
-      whereClause = whereClause.substring(0, whereClause.indexOf('order by'));
-    }
-    if (whereClause.includes('limit')) {
-      whereClause = whereClause.substring(0, whereClause.indexOf('limit'));
-    }
-    
-    whereClause = whereClause.trim();
+    const whereClause = whereMatch[1].trim();
     
     return data.filter(row => {
-      // Handle LIKE operator
       if (whereClause.includes('like')) {
-        const [field, pattern] = whereClause.split('like').map(s => s.trim());
-        const fieldName = field.trim();
-        // Extract the pattern removing quotes
-        const likePattern = pattern.replace(/['"]/g, '').replace(/;$/, '');
-        
-        if (likePattern.startsWith('%') && likePattern.endsWith('%')) {
-          // Contains
-          const searchTerm = likePattern.slice(1, -1).toLowerCase();
-          return String(row[fieldName]).toLowerCase().includes(searchTerm);
-        } else if (likePattern.startsWith('%')) {
-          // Ends with
-          const searchTerm = likePattern.slice(1).toLowerCase();
-          return String(row[fieldName]).toLowerCase().endsWith(searchTerm);
-        } else if (likePattern.endsWith('%')) {
-          // Starts with
-          const searchTerm = likePattern.slice(0, -1).toLowerCase();
-          return String(row[fieldName]).toLowerCase().startsWith(searchTerm);
+        const likeMatch = whereClause.match(/(\w+)\s+like\s+['"']%?([^%'"]*)%?['"']/i);
+        if (likeMatch) {
+          const [_, fieldName, pattern] = likeMatch;
+          const rowValue = String(row[fieldName]).toLowerCase();
+          
+          if (whereClause.includes("'%" + pattern + "%'") || whereClause.includes('"' + pattern + '%"')) {
+            return rowValue.includes(pattern.toLowerCase());
+          } else if (whereClause.includes("'%" + pattern + "'") || whereClause.includes('"' + pattern + '"')) {
+            return rowValue.endsWith(pattern.toLowerCase());
+          } else if (whereClause.includes("'" + pattern + "%'") || whereClause.includes('"' + pattern + '%"')) {
+            return rowValue.startsWith(pattern.toLowerCase());
+          }
         }
-        
-        return String(row[fieldName]) === likePattern;
       }
       
-      // Handle greater than operator
       if (whereClause.includes('>')) {
-        const [field, value] = whereClause.split('>').map(s => s.trim());
-        const fieldName = field.trim();
-        const compareValue = parseFloat(value);
-        
-        if (!isNaN(compareValue)) {
-          return parseFloat(row[fieldName]) > compareValue;
+        const gtMatch = whereClause.match(/(\w+)\s*>\s*(\d+)/i);
+        if (gtMatch) {
+          const [_, fieldName, value] = gtMatch;
+          return parseFloat(String(row[fieldName])) > parseFloat(value);
         }
       }
       
-      // Handle equals operator
+      if (whereClause.includes('<')) {
+        const ltMatch = whereClause.match(/(\w+)\s*<\s*(\d+)/i);
+        if (ltMatch) {
+          const [_, fieldName, value] = ltMatch;
+          return parseFloat(String(row[fieldName])) < parseFloat(value);
+        }
+      }
+      
       if (whereClause.includes('=')) {
-        const [field, value] = whereClause.split('=').map(s => s.trim());
-        const fieldName = field.trim();
-        const compareValue = value.replace(/['"]/g, '');
-        
-        return String(row[fieldName]) === compareValue;
+        const eqMatch = whereClause.match(/(\w+)\s*=\s*['"']?([^'"']+)['"']?/i);
+        if (eqMatch) {
+          const [_, fieldName, value] = eqMatch;
+          return String(row[fieldName]).toLowerCase() === value.toLowerCase();
+        }
       }
       
       return true;
     });
   }
   
-  applyOrderByClause(data, query) {
-    const orderByIndex = query.indexOf('order by');
-    if (orderByIndex === -1) return data;
+  applyOrderByClause(data: any[], query: string) {
+    const orderByMatch = query.match(/order by\s+(\w+)\s*(asc|desc)?/i);
+    if (!orderByMatch) return data;
     
-    let orderByClause = query.substring(orderByIndex + 8);
-    
-    // Extract the ordering field and direction before LIMIT if present
-    if (orderByClause.includes('limit')) {
-      orderByClause = orderByClause.substring(0, orderByClause.indexOf('limit'));
-    }
-    
-    orderByClause = orderByClause.trim();
-    
-    const [field, direction] = orderByClause.split(/\s+/);
+    const [_, fieldName, direction] = orderByMatch;
     const isDescending = direction && direction.toLowerCase() === 'desc';
     
     return [...data].sort((a, b) => {
-      const valueA = a[field];
-      const valueB = b[field];
+      const valueA = a[fieldName];
+      const valueB = b[fieldName];
       
-      // Sort numerically if values are numbers
-      if (!isNaN(valueA) && !isNaN(valueB)) {
+      if (typeof valueA === 'number' && typeof valueB === 'number') {
         return isDescending ? valueB - valueA : valueA - valueB;
       }
       
-      // Otherwise sort alphabetically
-      const strA = String(valueA);
-      const strB = String(valueB);
+      const strA = String(valueA || '');
+      const strB = String(valueB || '');
       
       return isDescending ? strB.localeCompare(strA) : strA.localeCompare(strB);
     });
   }
   
-  handleJoinQuery(query) {
-    // This is a simplified JOIN handler for demo purposes
-    // In a real implementation, this would properly parse the query and execute it
-    
-    // For the demo, we'll handle a few specific JOIN patterns
+  handleJoinQuery(query: string) {
     if (query.includes('customers') && query.includes('orders')) {
-      // Join customers and orders
-      const result = [];
+      const results = [];
       
-      for (const order of this.tables.orders) {
-        const customer = this.tables.customers.find(c => c.id === order.customer_id);
+      for (const order of this.tableData.orders) {
+        const customer = this.tableData.customers.find(c => c.id === order.customer_id);
         if (customer) {
-          result.push({
+          results.push({
             order_id: order.id,
             order_date: order.date,
             order_status: order.status,
@@ -357,36 +344,32 @@ class MockDatabaseEngine {
         }
       }
       
-      // Filter by name if specified
       if (query.includes('where') && query.includes('like')) {
         const nameMatch = query.match(/name\s+like\s+['"]%([^%]+)%['"]/i);
         if (nameMatch && nameMatch[1]) {
           const searchName = nameMatch[1].toLowerCase();
-          return result.filter(r => r.customer_name.toLowerCase().includes(searchName));
+          return results.filter(r => r.customer_name.toLowerCase().includes(searchName));
         }
       }
       
-      // Apply ordering
       if (query.includes('order by') && query.includes('date')) {
         const isDesc = query.includes('desc');
-        result.sort((a, b) => {
+        results.sort((a, b) => {
           const dateA = new Date(a.order_date);
           const dateB = new Date(b.order_date);
-          return isDesc ? dateB - dateA : dateA - dateB;
+          return isDesc ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
         });
       }
       
-      return result;
+      return results;
     }
     
     if (query.includes('products') && query.includes('order_items')) {
-      // Join products and order_items to get sales data
-      const result = [];
-      const productSales = {};
+      const results: any[] = [];
+      const productSales: Record<string, any> = {};
       
-      // Calculate total sales by product
-      for (const item of this.tables.order_items) {
-        const product = this.tables.products.find(p => p.id === item.product_id);
+      for (const item of this.tableData.order_items) {
+        const product = this.tableData.products.find(p => p.id === item.product_id);
         if (product) {
           if (!productSales[product.name]) {
             productSales[product.name] = {
@@ -401,20 +384,30 @@ class MockDatabaseEngine {
         }
       }
       
-      // Convert to array
       for (const productName in productSales) {
-        result.push(productSales[productName]);
+        results.push(productSales[productName]);
       }
       
-      // Sort by revenue descending
-      result.sort((a, b) => b.revenue - a.revenue);
+      results.sort((a, b) => b.revenue - a.revenue);
       
-      return result;
+      return results;
     }
     
-    // Default: return an empty result for unsupported joins
     return [];
   }
+}
+
+function naturalLanguageToSQL(query: string): string {
+  let generatedSQL = `SELECT * FROM customers LIMIT 10`;
+  
+  for (const pattern of nlPatterns) {
+    if (pattern.pattern.test(query.toLowerCase())) {
+      generatedSQL = pattern.sqlTemplate(query);
+      break;
+    }
+  }
+  
+  return generatedSQL;
 }
 
 const SqlExplorer = () => {
@@ -429,15 +422,12 @@ const SqlExplorer = () => {
   const [tableSchema, setTableSchema] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Initialize database engine
   const dbEngine = new MockDatabaseEngine(mockTableData);
   
-  // Filter tables based on search term
   const filteredTables = mockTables.filter(table => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Load table data when a table is selected
   useEffect(() => {
     if (selectedTable) {
       const table = mockTables.find(t => t.name === selectedTable);
@@ -468,7 +458,6 @@ const SqlExplorer = () => {
     
     console.log('Running query:', sqlQuery);
     
-    // Simulate processing time
     setTimeout(() => {
       try {
         const results = dbEngine.executeQuery(sqlQuery);
@@ -494,37 +483,9 @@ const SqlExplorer = () => {
     setIsExecuting(true);
     setErrorMessage(null);
     
-    // Find a close match in our mock translations
     setTimeout(() => {
       try {
-        let generatedQuery = '';
-        const query = naturalLanguageQuery.toLowerCase();
-        
-        // Find the most similar mock query
-        for (const [nlQuery, sql] of Object.entries(mockNLTranslations)) {
-          if (query.includes(nlQuery) || nlQuery.includes(query)) {
-            generatedQuery = sql;
-            break;
-          }
-        }
-        
-        // If no match found, use a default query
-        if (!generatedQuery) {
-          if (query.includes('customer')) {
-            generatedQuery = mockNLTranslations["find customers who spent more than 100"];
-          } else if (query.includes('product')) {
-            generatedQuery = mockNLTranslations["which products are in the electronics category"];
-          } else if (query.includes('order')) {
-            generatedQuery = mockNLTranslations["show all orders from customer john"];
-          } else if (query.includes('employee')) {
-            generatedQuery = mockNLTranslations["get sales representatives"];
-          } else if (query.includes('name')) {
-            generatedQuery = mockNLTranslations["select names starting with letter j"];
-          } else {
-            generatedQuery = `SELECT * FROM customers LIMIT 10`;
-          }
-        }
-        
+        const generatedQuery = naturalLanguageToSQL(naturalLanguageQuery);
         setGeneratedSql(generatedQuery);
         setSqlQuery(generatedQuery);
         toast.success('SQL generated successfully');
@@ -574,7 +535,6 @@ const SqlExplorer = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Table browser */}
           <div className="bg-sidebar-background border border-sidebar-border rounded-lg p-4">
             <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
               <Database size={18} />
@@ -607,7 +567,6 @@ const SqlExplorer = () => {
               ))}
             </div>
             
-            {/* Table Schema */}
             {selectedTable && (
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-white mb-2">Table Schema</h3>
@@ -623,7 +582,6 @@ const SqlExplorer = () => {
             )}
           </div>
 
-          {/* Query editor */}
           <div className="md:col-span-2 bg-sidebar-background border border-sidebar-border rounded-lg p-4">
             <Tabs defaultValue="sql" className="w-full" onValueChange={setActiveTab} value={activeTab}>
               <TabsList className="mb-4 bg-sidebar-accent">
@@ -704,7 +662,6 @@ const SqlExplorer = () => {
               </TabsContent>
             </Tabs>
 
-            {/* Error message */}
             {errorMessage && (
               <div className="mt-4 p-3 bg-red-900/30 border border-red-900 rounded-md text-red-300">
                 <p className="font-medium mb-1">Error executing query:</p>
@@ -712,9 +669,7 @@ const SqlExplorer = () => {
               </div>
             )}
 
-            {/* Results table */}
-            {queryResults.length >
- 0 && (
+            {queryResults.length > 0 && (
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-white">Query Results</h3>

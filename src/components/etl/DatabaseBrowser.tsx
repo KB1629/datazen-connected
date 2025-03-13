@@ -19,6 +19,32 @@ interface DatabaseBrowserProps {
   onSelectTable: (tableName: string) => void;
 }
 
+// Mock data for natural language to SQL conversions
+const mockNLConversions: Record<string, string> = {
+  "show me all customers": `SELECT * FROM customers LIMIT 100`,
+  "find customers who spent more than 100": 
+    `SELECT *
+FROM customers
+WHERE total_spent > 100
+ORDER BY total_spent DESC
+LIMIT 10`,
+  "show all completed orders": 
+    `SELECT *
+FROM orders
+WHERE status = 'completed'
+ORDER BY date DESC`,
+  "get customer_id with status completed from orders": 
+    `SELECT customer_id, date, total
+FROM orders
+WHERE status = 'completed'
+ORDER BY date DESC`,
+  "list products with low stock": 
+    `SELECT id, name, category, price, stock
+FROM products
+WHERE stock < 50
+ORDER BY stock ASC`,
+};
+
 const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('natural');
@@ -52,6 +78,7 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
         { customer_id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', created_at: '2023-01-19 10:05:00' }
       ]);
       setIsRunningQuery(false);
+      toast.success("Query executed successfully");
     }, 1500);
   };
 
@@ -63,22 +90,55 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
     
     setIsGeneratingSQL(true);
     
-    // Simulate the AI processing
+    // Generate SQL from natural language query
     setTimeout(() => {
-      const mockSQL = `SELECT * FROM customers 
-WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-ORDER BY created_at DESC
-LIMIT 10;`;
+      let sqlResult = null;
+      const inputLower = queryInput.toLowerCase();
       
-      setGeneratedSQL(mockSQL);
+      // Try to find a matching pattern
+      for (const [pattern, sql] of Object.entries(mockNLConversions)) {
+        if (inputLower.includes(pattern.toLowerCase()) || pattern.toLowerCase().includes(inputLower)) {
+          sqlResult = sql;
+          break;
+        }
+      }
+      
+      // If no match, use a default query based on keywords
+      if (!sqlResult) {
+        if (inputLower.includes('customer')) {
+          sqlResult = mockNLConversions["show me all customers"];
+        } else if (inputLower.includes('order') && inputLower.includes('complete')) {
+          sqlResult = mockNLConversions["show all completed orders"];
+        } else if (inputLower.includes('product')) {
+          sqlResult = mockNLConversions["list products with low stock"];
+        } else {
+          sqlResult = `SELECT * FROM customers LIMIT 10`;
+        }
+      }
+      
+      setGeneratedSQL(sqlResult);
       setIsGeneratingSQL(false);
+      toast.success("SQL generated successfully");
       
       // After generating SQL, simulate running it
       setTimeout(() => {
-        setResults([
-          { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
-          { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' }
-        ]);
+        if (sqlResult?.toLowerCase().includes('customers')) {
+          setResults([
+            { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', orders: 5, total_spent: 529.95 },
+            { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', orders: 3, total_spent: 129.85 },
+            { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', orders: 12, total_spent: 1045.20 }
+          ]);
+        } else if (sqlResult?.toLowerCase().includes('orders')) {
+          setResults([
+            { id: 1, customer_id: 1, date: '2023-05-15', status: 'completed', total: 129.99 },
+            { id: 4, customer_id: 1, date: '2023-05-18', status: 'completed', total: 399.96 }
+          ]);
+        } else if (sqlResult?.toLowerCase().includes('products')) {
+          setResults([
+            { id: 3, name: 'Coffee Maker', category: 'Kitchen', price: 79.99, stock: 32 },
+            { id: 1, name: 'Laptop', category: 'Electronics', price: 999.99, stock: 45 }
+          ]);
+        }
       }, 1000);
     }, 2000);
   };
@@ -88,12 +148,31 @@ LIMIT 10;`;
     
     // Simulate running the generated SQL
     setTimeout(() => {
-      setResults([
-        { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
-        { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' },
-        { customer_id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', created_at: '2023-01-17 11:45:00' }
-      ]);
+      if (generatedSQL?.toLowerCase().includes('customers')) {
+        setResults([
+          { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', orders: 5, total_spent: 529.95 },
+          { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', orders: 3, total_spent: 129.85 },
+          { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', orders: 12, total_spent: 1045.20 }
+        ]);
+      } else if (generatedSQL?.toLowerCase().includes('orders')) {
+        setResults([
+          { id: 1, customer_id: 1, date: '2023-05-15', status: 'completed', total: 129.99 },
+          { id: 4, customer_id: 1, date: '2023-05-18', status: 'completed', total: 399.96 }
+        ]);
+      } else if (generatedSQL?.toLowerCase().includes('products')) {
+        setResults([
+          { id: 3, name: 'Coffee Maker', category: 'Kitchen', price: 79.99, stock: 32 },
+          { id: 1, name: 'Laptop', category: 'Electronics', price: 999.99, stock: 45 }
+        ]);
+      } else {
+        setResults([
+          { id: 1, name: 'Item 1', description: 'Description for item 1', created_at: '2023-01-15 09:30:00' },
+          { id: 2, name: 'Item 2', description: 'Description for item 2', created_at: '2023-01-16 14:20:00' },
+          { id: 3, name: 'Item 3', description: 'Description for item 3', created_at: '2023-01-17 11:45:00' }
+        ]);
+      }
       setIsRunningQuery(false);
+      toast.success("Query executed successfully");
     }, 1500);
   };
 
@@ -113,19 +192,43 @@ LIMIT 10;`;
     setTimeout(() => {
       if (tableName === 'customers') {
         setResults([
-          { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
-          { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' },
-          { customer_id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', created_at: '2023-01-17 11:45:00' },
-          { customer_id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '555-3456', address: '101 Elm St', created_at: '2023-01-18 16:10:00' },
-          { customer_id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', created_at: '2023-01-19 10:05:00' }
+          { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', orders: 5, total_spent: 529.95 },
+          { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', orders: 3, total_spent: 129.85 },
+          { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', orders: 12, total_spent: 1045.20 },
+          { id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '555-3456', address: '101 Elm St', orders: 8, total_spent: 839.50 },
+          { id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', orders: 1, total_spent: 49.99 }
         ]);
       } else if (tableName === 'orders') {
         setResults([
-          { order_id: 1, customer_id: 1, total: 99.99, status: 'completed', created_at: '2023-01-15 10:30:00' },
-          { order_id: 2, customer_id: 2, total: 149.99, status: 'processing', created_at: '2023-01-16 15:20:00' },
-          { order_id: 3, customer_id: 3, total: 29.99, status: 'completed', created_at: '2023-01-17 12:45:00' },
-          { order_id: 4, customer_id: 1, total: 49.99, status: 'shipped', created_at: '2023-01-18 17:10:00' },
-          { order_id: 5, customer_id: 4, total: 199.99, status: 'completed', created_at: '2023-01-19 11:05:00' }
+          { id: 1, customer_id: 1, date: '2023-05-15', status: 'completed', total: 129.99 },
+          { id: 2, customer_id: 3, date: '2023-05-16', status: 'shipped', total: 259.99 },
+          { id: 3, customer_id: 2, date: '2023-05-17', status: 'processing', total: 59.99 },
+          { id: 4, customer_id: 1, date: '2023-05-18', status: 'completed', total: 399.96 },
+          { id: 5, customer_id: 4, date: '2023-05-19', status: 'shipped', total: 839.50 }
+        ]);
+      } else if (tableName === 'products') {
+        setResults([
+          { id: 1, name: 'Laptop', category: 'Electronics', price: 999.99, stock: 45 },
+          { id: 2, name: 'Smartphone', category: 'Electronics', price: 599.99, stock: 120 },
+          { id: 3, name: 'Coffee Maker', category: 'Kitchen', price: 79.99, stock: 32 },
+          { id: 4, name: 'Running Shoes', category: 'Apparel', price: 89.99, stock: 65 },
+          { id: 5, name: 'Bluetooth Speaker', category: 'Electronics', price: 49.99, stock: 80 }
+        ]);
+      } else if (tableName === 'order_items') {
+        setResults([
+          { id: 1, order_id: 1, product_id: 2, quantity: 1, price: 599.99 },
+          { id: 2, order_id: 1, product_id: 3, quantity: 1, price: 79.99 },
+          { id: 3, order_id: 2, product_id: 1, quantity: 1, price: 999.99 },
+          { id: 4, order_id: 3, product_id: 5, quantity: 2, price: 99.98 },
+          { id: 5, order_id: 4, product_id: 4, quantity: 1, price: 89.99 }
+        ]);
+      } else if (tableName === 'employees') {
+        setResults([
+          { id: 1, name: 'Michael Scott', position: 'Regional Manager', department: 'Management', hire_date: '2005-03-24' },
+          { id: 2, name: 'Jim Halpert', position: 'Sales Representative', department: 'Sales', hire_date: '2006-01-15' },
+          { id: 3, name: 'Pam Beesly', position: 'Receptionist', department: 'Administration', hire_date: '2005-05-10' },
+          { id: 4, name: 'Dwight Schrute', position: 'Assistant Regional Manager', department: 'Sales', hire_date: '2005-04-01' },
+          { id: 5, name: 'Angela Martin', position: 'Accountant', department: 'Finance', hire_date: '2005-06-12' }
         ]);
       } else {
         setResults([
@@ -134,6 +237,7 @@ LIMIT 10;`;
           { id: 3, name: 'Item 3', description: 'Description for item 3', created_at: '2023-01-17 11:45:00' }
         ]);
       }
+      toast.success(`Showing data from table: ${tableName}`);
     }, 500);
   };
 
@@ -333,7 +437,7 @@ LIMIT 10;`;
                           <TableRow key={i} className="border-gray-700 hover:bg-gray-700/30">
                             {Object.values(row).map((value: any, j) => (
                               <TableCell key={j} className="text-gray-300">
-                                {value}
+                                {String(value)}
                               </TableCell>
                             ))}
                           </TableRow>
