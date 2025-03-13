@@ -16,7 +16,9 @@ import {
   Sparkles,
   FolderKanban,
   FileCode,
-  ChevronLeft
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -43,6 +45,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   backText 
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -146,10 +149,23 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {showSidebar && (
           <>
             <aside
-              className={`bg-sidebar-background border-r border-sidebar-border w-64 flex-shrink-0 flex flex-col transition-all duration-300 
+              className={`bg-sidebar-background border-r border-sidebar-border flex-shrink-0 flex flex-col transition-all duration-300 
                         md:relative ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
-                        z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto`}
+                        z-20 absolute inset-y-0 h-[calc(100vh-65px)] mt-[65px] md:mt-0 md:h-auto
+                        ${sidebarCollapsed ? "md:w-20" : "md:w-64"}`}
             >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -right-10 top-3 hidden md:flex bg-sidebar-background text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              >
+                {sidebarCollapsed ? 
+                  <PanelLeftOpen className="h-5 w-5" /> : 
+                  <PanelLeftClose className="h-5 w-5" />
+                }
+              </Button>
+              
               <nav className="mt-6 flex-1">
                 <ul className="space-y-1 px-4">
                   {navItems.map((item) => (
@@ -163,22 +179,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         }`}
                       >
                         {item.icon}
-                        <span>{item.label}</span>
+                        {!sidebarCollapsed && <span>{item.label}</span>}
                       </Link>
                     </li>
                   ))}
                 </ul>
               </nav>
               
-              <div className="p-4 border-t border-sidebar-border mt-auto">
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 text-white"
-                  onClick={() => navigate("/project/setup")}
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Create Project
-                </Button>
-              </div>
+              {!sidebarCollapsed && (
+                <div className="p-4 border-t border-sidebar-border mt-auto">
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => navigate("/project/setup")}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Create Project
+                  </Button>
+                </div>
+              )}
             </aside>
             
             {sidebarOpen && (
