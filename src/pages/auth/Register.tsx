@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, User } from "lucide-react";
+import { Database, User, Lock, Mail, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
@@ -14,8 +14,15 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    // If user is already authenticated, redirect to dashboard
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +37,9 @@ const Register = () => {
     
     try {
       await register(email, password, name);
-      navigate("/dashboard");
     } catch (error) {
       console.error("Registration error:", error);
+      // Error is already displayed by toast in AuthContext
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +48,7 @@ const Register = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 animate-fade-in">
           <div className="flex justify-center mb-4">
             <Database className="h-12 w-12 text-blue-400" />
           </div>
@@ -51,7 +58,7 @@ const Register = () => {
           <p className="text-gray-300 mt-2">Create your account</p>
         </div>
         
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gray-800 border-gray-700 animate-scale-in">
           <CardHeader>
             <CardTitle className="text-xl text-white">Register</CardTitle>
             <CardDescription className="text-gray-400">
@@ -61,13 +68,14 @@ const Register = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded-md text-sm">
+                <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded-md text-sm animate-pulse">
                   {error}
                 </div>
               )}
               
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-gray-300">
+                <label htmlFor="name" className="text-sm font-medium text-gray-300 flex items-center">
+                  <User className="h-4 w-4 mr-2 text-gray-400" />
                   Full Name
                 </label>
                 <Input
@@ -77,12 +85,14 @@ const Register = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  disabled={isLoading}
                 />
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-300">
+                <label htmlFor="email" className="text-sm font-medium text-gray-300 flex items-center">
+                  <Mail className="h-4 w-4 mr-2 text-gray-400" />
                   Email
                 </label>
                 <Input
@@ -92,12 +102,14 @@ const Register = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  disabled={isLoading}
                 />
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-300">
+                <label htmlFor="password" className="text-sm font-medium text-gray-300 flex items-center">
+                  <Lock className="h-4 w-4 mr-2 text-gray-400" />
                   Password
                 </label>
                 <Input
@@ -107,12 +119,14 @@ const Register = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  disabled={isLoading}
                 />
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300">
+                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300 flex items-center">
+                  <Lock className="h-4 w-4 mr-2 text-gray-400" />
                   Confirm Password
                 </label>
                 <Input
@@ -122,16 +136,24 @@ const Register = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  disabled={isLoading}
                 />
               </div>
               
               <Button 
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 transition-all"
                 disabled={isLoading}
               >
-                {isLoading ? "Creating account..." : "Create account"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Create account"
+                )}
               </Button>
             </form>
           </CardContent>
@@ -146,17 +168,17 @@ const Register = () => {
             </div>
             
             <div className="grid grid-cols-2 gap-4 w-full">
-              <Button variant="outline" className="border-gray-700 text-white hover:bg-gray-700">
+              <Button variant="outline" className="border-gray-700 text-white hover:bg-gray-700 transition-all">
                 Google
               </Button>
-              <Button variant="outline" className="border-gray-700 text-white hover:bg-gray-700">
+              <Button variant="outline" className="border-gray-700 text-white hover:bg-gray-700 transition-all">
                 GitHub
               </Button>
             </div>
             
             <div className="text-center text-gray-400 text-sm">
               Already have an account?{" "}
-              <Link to="/login" className="text-blue-400 hover:text-blue-300">
+              <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
                 Sign in
               </Link>
             </div>
