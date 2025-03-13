@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,8 @@ import {
   User,
   ChevronDown,
   Sparkles,
-  FolderKanban
+  FolderKanban,
+  FileCode
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -44,16 +44,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { path: "/projects", icon: <FolderKanban className="h-5 w-5" />, label: "Projects" },
     { path: "/connections", icon: <Database className="h-5 w-5" />, label: "Connections" },
     { path: "/workflows", icon: <Workflow className="h-5 w-5" />, label: "Workflows" },
+    { path: "/sql-explorer", icon: <FileCode className="h-5 w-5" />, label: "SQL Explorer" },
     { path: "/settings", icon: <Settings className="h-5 w-5" />, label: "Settings" },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Top Navigation */}
       <header className="bg-sidebar-background border-b border-sidebar-border py-4 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="md:hidden text-sidebar-foreground hover:text-white"
@@ -61,7 +60,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
             
-            {/* Logo */}
             <Link to="/dashboard" className="flex items-center space-x-2">
               <div className="bg-primary rounded-md p-1.5">
                 <Database className="h-5 w-5 text-white" />
@@ -72,7 +70,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </Link>
           </div>
           
-          {/* User dropdown */}
           <div className="flex items-center space-x-4">
             <Button 
               variant="outline" 
@@ -112,9 +109,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
       </header>
       
-      {/* Main Content with Sidebar */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside
           className={`bg-sidebar-background border-r border-sidebar-border w-64 flex-shrink-0 flex flex-col transition-all duration-300 
                     md:relative ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
@@ -151,7 +146,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
         </aside>
         
-        {/* Overlay for mobile when sidebar is open */}
         {sidebarOpen && (
           <div 
             className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
@@ -159,7 +153,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           />
         )}
         
-        {/* Main content */}
         <main className="flex-1 overflow-y-auto bg-background p-6">
           {children}
         </main>
