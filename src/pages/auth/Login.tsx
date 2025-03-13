@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,8 @@ const Login = () => {
     
     try {
       await login(email, password);
+      // After successful login, navigate to dashboard
+      navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
       // Error is already displayed by toast in AuthContext
@@ -44,6 +45,8 @@ const Login = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500)); // slight delay for visual feedback
       await login("demo@example.com", "password");
+      // After successful login, navigate to dashboard
+      navigate("/dashboard");
     } catch (error) {
       console.error("Demo login error:", error);
     } finally {

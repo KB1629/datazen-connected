@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 interface User {
   id: string;
@@ -31,7 +30,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  
+  // Removed the useNavigate hook to fix the error
 
   useEffect(() => {
     // Check if user is logged in from localStorage
@@ -73,7 +73,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem("user", JSON.stringify(userData));
         
         toast.success("Login successful! Welcome to DataZen Flow.");
-        navigate('/dashboard');
+        
+        // Instead of using navigate directly, we'll let the component handle navigation
         return;
       } else {
         throw new Error("Please enter both email and password");
@@ -112,7 +113,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem("user", JSON.stringify(userData));
       
       toast.success("Registration successful! Welcome to DataZen Flow.");
-      navigate('/dashboard');
+      
+      // Instead of using navigate directly, we'll let the component handle navigation
+      return;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Registration failed");
       throw error;
@@ -125,7 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     localStorage.removeItem("user");
     toast.success("Logout successful!");
-    navigate('/login');
+    // Instead of using navigate, we'll let the component handle navigation
   };
 
   return (
