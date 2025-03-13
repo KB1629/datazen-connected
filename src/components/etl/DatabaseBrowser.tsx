@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Search, Database, MessageSquare, Code, Table as TableIcon, LineChart } from 'lucide-react';
+import { Search, Database, MessageSquare, Code, Table as TableIcon, LineChart, Loader2 } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 interface DatabaseTable {
   name: string;
@@ -23,28 +24,83 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
   const [selectedTab, setSelectedTab] = useState('natural');
   const [queryInput, setQueryInput] = useState('');
   const [results, setResults] = useState<any[] | null>(null);
+  const [isGeneratingSQL, setIsGeneratingSQL] = useState(false);
+  const [generatedSQL, setGeneratedSQL] = useState<string | null>(null);
+  const [isRunningQuery, setIsRunningQuery] = useState(false);
 
   const filteredTables = tables.filter(table => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleRunQuery = () => {
+    if (!queryInput.trim()) {
+      toast.error("Please enter a SQL query");
+      return;
+    }
+    
+    setIsRunningQuery(true);
+    
     // Mock data for demonstration
-    setResults([
-      { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
-      { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' },
-      { customer_id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', created_at: '2023-01-17 11:45:00' },
-      { customer_id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '555-3456', address: '101 Elm St', created_at: '2023-01-18 16:10:00' },
-      { customer_id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', created_at: '2023-01-19 10:05:00' }
-    ]);
+    setTimeout(() => {
+      setResults([
+        { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
+        { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' },
+        { customer_id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', created_at: '2023-01-17 11:45:00' },
+        { customer_id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '555-3456', address: '101 Elm St', created_at: '2023-01-18 16:10:00' },
+        { customer_id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', created_at: '2023-01-19 10:05:00' }
+      ]);
+      setIsRunningQuery(false);
+    }, 1500);
   };
 
   const handleNaturalLanguageQuery = () => {
+    if (!queryInput.trim()) {
+      toast.error("Please enter a question about your data");
+      return;
+    }
+    
+    setIsGeneratingSQL(true);
+    
     // Simulate the AI processing
-    setResults([
-      { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
-      { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' }
-    ]);
+    setTimeout(() => {
+      const mockSQL = `SELECT * FROM customers 
+WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+ORDER BY created_at DESC
+LIMIT 10;`;
+      
+      setGeneratedSQL(mockSQL);
+      setIsGeneratingSQL(false);
+      
+      // After generating SQL, simulate running it
+      setTimeout(() => {
+        setResults([
+          { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
+          { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' }
+        ]);
+      }, 1000);
+    }, 2000);
+  };
+
+  const runGeneratedSQL = () => {
+    setIsRunningQuery(true);
+    
+    // Simulate running the generated SQL
+    setTimeout(() => {
+      setResults([
+        { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
+        { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' },
+        { customer_id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', created_at: '2023-01-17 11:45:00' }
+      ]);
+      setIsRunningQuery(false);
+    }, 1500);
+  };
+
+  const editGeneratedSQL = () => {
+    if (generatedSQL) {
+      setQueryInput(generatedSQL);
+      setSelectedTab('sql');
+      setGeneratedSQL(null);
+    }
   };
 
   return (
@@ -107,7 +163,7 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
                 <TabsContent value="natural" className="mt-0">
                   <div className="flex gap-2">
                     <Textarea
-                      placeholder="Ask a question about your data in plain English..."
+                      placeholder="Ask a question about your data in plain English... (e.g., 'Show me customers who signed up in the last 30 days')"
                       className="min-h-[60px] bg-gray-700 border-gray-600 text-white flex-1"
                       value={queryInput}
                       onChange={(e) => setQueryInput(e.target.value)}
@@ -115,16 +171,58 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
                     <Button 
                       className="bg-primary hover:bg-primary/90" 
                       onClick={handleNaturalLanguageQuery}
+                      disabled={isGeneratingSQL}
                     >
-                      Submit
+                      {isGeneratingSQL ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        "Submit"
+                      )}
                     </Button>
                   </div>
+                  
+                  {generatedSQL && (
+                    <div className="mt-4 p-4 rounded-md border border-gray-700 bg-gray-900/50">
+                      <h3 className="text-sm font-medium text-gray-300 mb-2">Generated SQL Query:</h3>
+                      <pre className="bg-gray-900 p-3 rounded text-green-400 overflow-x-auto text-sm">
+                        {generatedSQL}
+                      </pre>
+                      <div className="flex gap-2 mt-3 justify-end">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-gray-700 hover:bg-gray-700 text-gray-200"
+                          onClick={editGeneratedSQL}
+                        >
+                          Edit Query
+                        </Button>
+                        <Button 
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={runGeneratedSQL}
+                          disabled={isRunningQuery}
+                        >
+                          {isRunningQuery ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Running...
+                            </>
+                          ) : (
+                            "Run SQL"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="sql" className="mt-0">
                   <div className="flex gap-2">
                     <Textarea
-                      placeholder="Write your SQL query here..."
+                      placeholder="Write your SQL query here... (e.g., 'SELECT * FROM customers WHERE...')"
                       className="min-h-[60px] bg-gray-700 border-gray-600 text-white flex-1 font-mono"
                       value={queryInput}
                       onChange={(e) => setQueryInput(e.target.value)}
@@ -132,8 +230,16 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
                     <Button 
                       className="bg-primary hover:bg-primary/90" 
                       onClick={handleRunQuery}
+                      disabled={isRunningQuery}
                     >
-                      Run
+                      {isRunningQuery ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Running...
+                        </>
+                      ) : (
+                        "Run"
+                      )}
                     </Button>
                   </div>
                 </TabsContent>

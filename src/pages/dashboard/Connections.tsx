@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import SchemaBrowser from "@/components/etl/SchemaBrowser";
 
-// Mock data for existing connections
 const existingConnections = [
   { id: 1, name: "Production Database", type: "PostgreSQL", host: "prod-db.example.com", port: "5432", username: "admin", status: "connected", tables: 32 },
   { id: 2, name: "Analytics Data", type: "MySQL", host: "analytics.example.com", port: "3306", username: "analyst", status: "connected", tables: 18 },
@@ -38,8 +37,8 @@ const Connections = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingConnection, setIsAddingConnection] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [selectedConnectionForSchema, setSelectedConnectionForSchema] = useState<{id: number, name: string, type: string} | null>(null);
   
-  // New connection state
   const [newConnection, setNewConnection] = useState({
     name: "",
     type: "",
@@ -68,11 +67,9 @@ const Connections = () => {
   const testConnection = () => {
     setIsTestingConnection(true);
     
-    // Simulate testing the connection
     setTimeout(() => {
       setIsTestingConnection(false);
       
-      // For demo purposes, succeed if all fields are filled
       const allFieldsFilled = Object.values(newConnection).every(val => val !== "");
       
       if (allFieldsFilled) {
@@ -84,13 +81,11 @@ const Connections = () => {
   };
   
   const handleAddConnection = () => {
-    // Validate fields
     if (!newConnection.name || !newConnection.type || !newConnection.host) {
       toast.error("Name, type, and host are required fields");
       return;
     }
     
-    // Add the new connection
     const newConnectionWithId = {
       id: connections.length + 1,
       ...newConnection,
@@ -100,7 +95,6 @@ const Connections = () => {
     
     setConnections([...connections, newConnectionWithId as any]);
     
-    // Reset form and close dialog
     setNewConnection({
       name: "",
       type: "",
@@ -121,14 +115,16 @@ const Connections = () => {
   };
   
   const refreshConnection = (id: number) => {
-    // Simulate refresh
     toast.success("Refreshing connection metadata...");
     setTimeout(() => {
       toast.success("Connection refreshed successfully");
     }, 1500);
   };
   
-  // Filter connections based on search
+  const viewSchema = (connection: {id: number, name: string, type: string}) => {
+    setSelectedConnectionForSchema(connection);
+  };
+  
   const filteredConnections = connections.filter(conn => 
     conn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conn.type.toLowerCase().includes(searchQuery.toLowerCase())
@@ -290,7 +286,6 @@ const Connections = () => {
           </Dialog>
         </div>
         
-        {/* Search & Filters */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input 
@@ -301,7 +296,6 @@ const Connections = () => {
           />
         </div>
         
-        {/* Connections List */}
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="bg-gray-800 border-gray-700">
             <TabsTrigger value="all" className="data-[state=active]:bg-gray-700">All</TabsTrigger>
@@ -391,6 +385,7 @@ const Connections = () => {
                         <Button
                           variant="outline"
                           className="w-full border-gray-700 text-gray-300 hover:bg-gray-700"
+                          onClick={() => viewSchema({ id: connection.id, name: connection.name, type: connection.type })}
                         >
                           <Server className="h-4 w-4 mr-2" />
                           View Schema
@@ -409,7 +404,6 @@ const Connections = () => {
                 .filter(conn => conn.type === "PostgreSQL" || conn.type === "Supabase" || conn.type === "Neon.tech")
                 .map((connection) => (
                   <Card key={connection.id} className="bg-gray-800 border-gray-700 shadow-lg">
-                    {/* Same card content as above, repeated for each tab */}
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
@@ -422,22 +416,6 @@ const Connections = () => {
                           <CardDescription className="text-gray-400">
                             {connection.type}
                           </CardDescription>
-                        </div>
-                        <div className="flex space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-700"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-red-400 hover:bg-gray-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
                     </CardHeader>
@@ -465,6 +443,7 @@ const Connections = () => {
                         <Button
                           variant="outline"
                           className="w-full border-gray-700 text-gray-300 hover:bg-gray-700"
+                          onClick={() => viewSchema({ id: connection.id, name: connection.name, type: connection.type })}
                         >
                           <Server className="h-4 w-4 mr-2" />
                           View Schema
@@ -482,7 +461,6 @@ const Connections = () => {
                 .filter(conn => conn.type === "MySQL")
                 .map((connection) => (
                   <Card key={connection.id} className="bg-gray-800 border-gray-700 shadow-lg">
-                    {/* Same card content structure as above */}
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
@@ -513,6 +491,7 @@ const Connections = () => {
                         <Button
                           variant="outline"
                           className="w-full border-gray-700 text-gray-300 hover:bg-gray-700"
+                          onClick={() => viewSchema({ id: connection.id, name: connection.name, type: connection.type })}
                         >
                           <Server className="h-4 w-4 mr-2" />
                           View Schema
@@ -530,7 +509,6 @@ const Connections = () => {
                 .filter(conn => !["PostgreSQL", "MySQL", "Supabase", "Neon.tech"].includes(conn.type))
                 .map((connection) => (
                   <Card key={connection.id} className="bg-gray-800 border-gray-700 shadow-lg">
-                    {/* Same card content structure as above */}
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
@@ -561,6 +539,7 @@ const Connections = () => {
                         <Button
                           variant="outline"
                           className="w-full border-gray-700 text-gray-300 hover:bg-gray-700"
+                          onClick={() => viewSchema({ id: connection.id, name: connection.name, type: connection.type })}
                         >
                           <Server className="h-4 w-4 mr-2" />
                           View Schema
@@ -572,6 +551,15 @@ const Connections = () => {
             </div>
           </TabsContent>
         </Tabs>
+        
+        {selectedConnectionForSchema && (
+          <SchemaBrowser
+            connectionName={selectedConnectionForSchema.name}
+            connectionType={selectedConnectionForSchema.type}
+            isOpen={!!selectedConnectionForSchema}
+            onClose={() => setSelectedConnectionForSchema(null)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
