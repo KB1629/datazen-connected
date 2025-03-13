@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Search, Database, MessageSquare, Code, Table as TableIcon, LineChart, Loader2, LayoutList, LayoutGrid } from 'lucide-react';
+import { Search, Database, MessageSquare, Code, Table as TableIcon, LineChart, Loader2, LayoutList, LayoutGrid, Copy } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { SQLQueryEngine } from "@/lib/sqlQueryEngine";
+import { convertNaturalLanguageToSQL } from "@/lib/naturalLanguageConverter";
+import { mockTableData } from "@/lib/sqlMockData";
 
 interface DatabaseTable {
   name: string;
@@ -19,32 +22,6 @@ interface DatabaseBrowserProps {
   onSelectTable: (tableName: string) => void;
 }
 
-// Mock data for natural language to SQL conversions
-const mockNLConversions: Record<string, string> = {
-  "show me all customers": `SELECT * FROM customers LIMIT 100`,
-  "find customers who spent more than 100": 
-    `SELECT *
-FROM customers
-WHERE total_spent > 100
-ORDER BY total_spent DESC
-LIMIT 10`,
-  "show all completed orders": 
-    `SELECT *
-FROM orders
-WHERE status = 'completed'
-ORDER BY date DESC`,
-  "get customer_id with status completed from orders": 
-    `SELECT customer_id, date, total
-FROM orders
-WHERE status = 'completed'
-ORDER BY date DESC`,
-  "list products with low stock": 
-    `SELECT id, name, category, price, stock
-FROM products
-WHERE stock < 50
-ORDER BY stock ASC`,
-};
-
 const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('natural');
@@ -55,6 +32,9 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
   const [isRunningQuery, setIsRunningQuery] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
+  const [resultCount, setResultCount] = useState<number>(0);
+
+  const dbEngine = new SQLQueryEngine(mockTableData);
 
   const filteredTables = tables.filter(table => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -68,18 +48,20 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
     
     setIsRunningQuery(true);
     
-    // Mock data for demonstration
     setTimeout(() => {
-      setResults([
-        { customer_id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', created_at: '2023-01-15 09:30:00' },
-        { customer_id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', created_at: '2023-01-16 14:20:00' },
-        { customer_id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', created_at: '2023-01-17 11:45:00' },
-        { customer_id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '555-3456', address: '101 Elm St', created_at: '2023-01-18 16:10:00' },
-        { customer_id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', created_at: '2023-01-19 10:05:00' }
-      ]);
-      setIsRunningQuery(false);
-      toast.success("Query executed successfully");
-    }, 1500);
+      try {
+        const result = dbEngine.executeQuery(queryInput);
+        setResults(result.data);
+        setResultCount(result.count);
+        toast.success("Query executed successfully");
+      } catch (error) {
+        console.error('Error executing query:', error);
+        toast.error(`Error executing query: ${error}`);
+        setResults([]);
+      } finally {
+        setIsRunningQuery(false);
+      }
+    }, 800);
   };
 
   const handleNaturalLanguageQuery = () => {
@@ -92,152 +74,68 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
     
     // Generate SQL from natural language query
     setTimeout(() => {
-      let sqlResult = null;
-      const inputLower = queryInput.toLowerCase();
+      try {
+        const sql = convertNaturalLanguageToSQL(queryInput, selectedTableName);
+        setGeneratedSQL(sql);
+        setIsGeneratingSQL(false);
+        toast.success("SQL generated successfully");
       
-      // Try to find a matching pattern
-      for (const [pattern, sql] of Object.entries(mockNLConversions)) {
-        if (inputLower.includes(pattern.toLowerCase()) || pattern.toLowerCase().includes(inputLower)) {
-          sqlResult = sql;
-          break;
-        }
+        // After generating SQL, simulate running it
+        setIsRunningQuery(true);
+        
+        setTimeout(() => {
+          try {
+            const result = dbEngine.executeQuery(sql);
+            setResults(result.data);
+            setResultCount(result.count);
+            toast.success("Query executed successfully");
+          } catch (error) {
+            console.error('Error executing query:', error);
+            toast.error(`Error executing query: ${error}`);
+            setResults([]);
+          } finally {
+            setIsRunningQuery(false);
+          }
+        }, 800);
+      } catch (error) {
+        console.error('Error generating SQL:', error);
+        toast.error(`Error generating SQL: ${error}`);
+        setIsGeneratingSQL(false);
       }
-      
-      // If no match, use a default query based on keywords
-      if (!sqlResult) {
-        if (inputLower.includes('customer')) {
-          sqlResult = mockNLConversions["show me all customers"];
-        } else if (inputLower.includes('order') && inputLower.includes('complete')) {
-          sqlResult = mockNLConversions["show all completed orders"];
-        } else if (inputLower.includes('product')) {
-          sqlResult = mockNLConversions["list products with low stock"];
-        } else {
-          sqlResult = `SELECT * FROM customers LIMIT 10`;
-        }
-      }
-      
-      setGeneratedSQL(sqlResult);
-      setIsGeneratingSQL(false);
-      toast.success("SQL generated successfully");
-      
-      // After generating SQL, simulate running it
-      setTimeout(() => {
-        if (sqlResult?.toLowerCase().includes('customers')) {
-          setResults([
-            { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', orders: 5, total_spent: 529.95 },
-            { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', orders: 3, total_spent: 129.85 },
-            { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', orders: 12, total_spent: 1045.20 }
-          ]);
-        } else if (sqlResult?.toLowerCase().includes('orders')) {
-          setResults([
-            { id: 1, customer_id: 1, date: '2023-05-15', status: 'completed', total: 129.99 },
-            { id: 4, customer_id: 1, date: '2023-05-18', status: 'completed', total: 399.96 }
-          ]);
-        } else if (sqlResult?.toLowerCase().includes('products')) {
-          setResults([
-            { id: 3, name: 'Coffee Maker', category: 'Kitchen', price: 79.99, stock: 32 },
-            { id: 1, name: 'Laptop', category: 'Electronics', price: 999.99, stock: 45 }
-          ]);
-        }
-      }, 1000);
-    }, 2000);
+    }, 800);
   };
 
-  const runGeneratedSQL = () => {
-    setIsRunningQuery(true);
-    
-    // Simulate running the generated SQL
-    setTimeout(() => {
-      if (generatedSQL?.toLowerCase().includes('customers')) {
-        setResults([
-          { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', orders: 5, total_spent: 529.95 },
-          { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', orders: 3, total_spent: 129.85 },
-          { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', orders: 12, total_spent: 1045.20 }
-        ]);
-      } else if (generatedSQL?.toLowerCase().includes('orders')) {
-        setResults([
-          { id: 1, customer_id: 1, date: '2023-05-15', status: 'completed', total: 129.99 },
-          { id: 4, customer_id: 1, date: '2023-05-18', status: 'completed', total: 399.96 }
-        ]);
-      } else if (generatedSQL?.toLowerCase().includes('products')) {
-        setResults([
-          { id: 3, name: 'Coffee Maker', category: 'Kitchen', price: 79.99, stock: 32 },
-          { id: 1, name: 'Laptop', category: 'Electronics', price: 999.99, stock: 45 }
-        ]);
-      } else {
-        setResults([
-          { id: 1, name: 'Item 1', description: 'Description for item 1', created_at: '2023-01-15 09:30:00' },
-          { id: 2, name: 'Item 2', description: 'Description for item 2', created_at: '2023-01-16 14:20:00' },
-          { id: 3, name: 'Item 3', description: 'Description for item 3', created_at: '2023-01-17 11:45:00' }
-        ]);
-      }
-      setIsRunningQuery(false);
-      toast.success("Query executed successfully");
-    }, 1500);
-  };
-
-  const editGeneratedSQL = () => {
-    if (generatedSQL) {
-      setQueryInput(generatedSQL);
-      setSelectedTab('sql');
-      setGeneratedSQL(null);
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        toast.success('Copied to clipboard');
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+        toast.error('Failed to copy');
+      });
   };
 
   const handleTableSelect = (tableName: string) => {
     setSelectedTableName(tableName);
     onSelectTable(tableName);
     
-    // Mock data for the selected table
+    // Load data for the selected table
+    setIsRunningQuery(true);
+    
     setTimeout(() => {
-      if (tableName === 'customers') {
-        setResults([
-          { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-1234', address: '123 Main St', orders: 5, total_spent: 529.95 },
-          { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-5678', address: '456 Oak Ave', orders: 3, total_spent: 129.85 },
-          { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-9012', address: '789 Pine Rd', orders: 12, total_spent: 1045.20 },
-          { id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '555-3456', address: '101 Elm St', orders: 8, total_spent: 839.50 },
-          { id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '555-7890', address: '202 Maple Dr', orders: 1, total_spent: 49.99 }
-        ]);
-      } else if (tableName === 'orders') {
-        setResults([
-          { id: 1, customer_id: 1, date: '2023-05-15', status: 'completed', total: 129.99 },
-          { id: 2, customer_id: 3, date: '2023-05-16', status: 'shipped', total: 259.99 },
-          { id: 3, customer_id: 2, date: '2023-05-17', status: 'processing', total: 59.99 },
-          { id: 4, customer_id: 1, date: '2023-05-18', status: 'completed', total: 399.96 },
-          { id: 5, customer_id: 4, date: '2023-05-19', status: 'shipped', total: 839.50 }
-        ]);
-      } else if (tableName === 'products') {
-        setResults([
-          { id: 1, name: 'Laptop', category: 'Electronics', price: 999.99, stock: 45 },
-          { id: 2, name: 'Smartphone', category: 'Electronics', price: 599.99, stock: 120 },
-          { id: 3, name: 'Coffee Maker', category: 'Kitchen', price: 79.99, stock: 32 },
-          { id: 4, name: 'Running Shoes', category: 'Apparel', price: 89.99, stock: 65 },
-          { id: 5, name: 'Bluetooth Speaker', category: 'Electronics', price: 49.99, stock: 80 }
-        ]);
-      } else if (tableName === 'order_items') {
-        setResults([
-          { id: 1, order_id: 1, product_id: 2, quantity: 1, price: 599.99 },
-          { id: 2, order_id: 1, product_id: 3, quantity: 1, price: 79.99 },
-          { id: 3, order_id: 2, product_id: 1, quantity: 1, price: 999.99 },
-          { id: 4, order_id: 3, product_id: 5, quantity: 2, price: 99.98 },
-          { id: 5, order_id: 4, product_id: 4, quantity: 1, price: 89.99 }
-        ]);
-      } else if (tableName === 'employees') {
-        setResults([
-          { id: 1, name: 'Michael Scott', position: 'Regional Manager', department: 'Management', hire_date: '2005-03-24' },
-          { id: 2, name: 'Jim Halpert', position: 'Sales Representative', department: 'Sales', hire_date: '2006-01-15' },
-          { id: 3, name: 'Pam Beesly', position: 'Receptionist', department: 'Administration', hire_date: '2005-05-10' },
-          { id: 4, name: 'Dwight Schrute', position: 'Assistant Regional Manager', department: 'Sales', hire_date: '2005-04-01' },
-          { id: 5, name: 'Angela Martin', position: 'Accountant', department: 'Finance', hire_date: '2005-06-12' }
-        ]);
-      } else {
-        setResults([
-          { id: 1, name: 'Item 1', description: 'Description for item 1', created_at: '2023-01-15 09:30:00' },
-          { id: 2, name: 'Item 2', description: 'Description for item 2', created_at: '2023-01-16 14:20:00' },
-          { id: 3, name: 'Item 3', description: 'Description for item 3', created_at: '2023-01-17 11:45:00' }
-        ]);
+      try {
+        const result = dbEngine.executeQuery(`SELECT * FROM ${tableName} LIMIT 100`);
+        setResults(result.data);
+        setResultCount(result.count);
+        toast.success(`Showing data from table: ${tableName}`);
+      } catch (error) {
+        console.error('Error loading table data:', error);
+        toast.error(`Error loading table data: ${error}`);
+        setResults([]);
+      } finally {
+        setIsRunningQuery(false);
       }
-      toast.success(`Showing data from table: ${tableName}`);
     }, 500);
   };
 
@@ -329,12 +227,17 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
                     <Button 
                       className="bg-primary hover:bg-primary/90" 
                       onClick={handleNaturalLanguageQuery}
-                      disabled={isGeneratingSQL}
+                      disabled={isGeneratingSQL || isRunningQuery}
                     >
                       {isGeneratingSQL ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           Generating...
+                        </>
+                      ) : isRunningQuery ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Running...
                         </>
                       ) : (
                         "Submit"
@@ -344,35 +247,20 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
                   
                   {generatedSQL && (
                     <div className="mt-4 p-4 rounded-md border border-gray-700 bg-gray-900/50">
-                      <h3 className="text-sm font-medium text-gray-300 mb-2">Generated SQL Query:</h3>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-gray-300">Generated SQL Query:</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 text-gray-400 hover:text-white"
+                          onClick={() => copyToClipboard(generatedSQL)}
+                        >
+                          <Copy size={14} />
+                        </Button>
+                      </div>
                       <pre className="bg-gray-900 p-3 rounded text-green-400 overflow-x-auto text-sm">
                         {generatedSQL}
                       </pre>
-                      <div className="flex gap-2 mt-3 justify-end">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="border-gray-700 hover:bg-gray-700 text-gray-200"
-                          onClick={editGeneratedSQL}
-                        >
-                          Edit Query
-                        </Button>
-                        <Button 
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
-                          onClick={runGeneratedSQL}
-                          disabled={isRunningQuery}
-                        >
-                          {isRunningQuery ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Running...
-                            </>
-                          ) : (
-                            "Run SQL"
-                          )}
-                        </Button>
-                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -403,7 +291,7 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
                 </TabsContent>
               </Tabs>
               
-              {results && (
+              {results && results.length > 0 && (
                 <div className="mt-6 flex-1 flex flex-col">
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex gap-4">
@@ -416,7 +304,7 @@ const DatabaseBrowser: React.FC<DatabaseBrowserProps> = ({ tables, onSelectTable
                         Chart
                       </Button>
                     </div>
-                    <span className="text-sm text-gray-400">{results.length} results</span>
+                    <span className="text-sm text-gray-400">{resultCount} rows (showing {results.length})</span>
                   </div>
                   
                   <div className="flex-1 overflow-auto rounded border border-gray-700">
