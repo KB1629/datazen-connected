@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import Settings from "./pages/dashboard/Settings";
 import Projects from "./pages/dashboard/Projects";
 import ProjectSetup from "./pages/dashboard/ProjectSetup";
 import SqlExplorer from "./pages/dashboard/SqlExplorer";
+import NifiPipeline from "./pages/dashboard/NifiPipeline";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -57,6 +57,7 @@ const App = () => (
             <Route path="/project/setup" element={<ProtectedRoute><ProjectSetup /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/sql-explorer" element={<ProtectedRoute><SqlExplorer /></ProtectedRoute>} />
+            <Route path="/nifi-pipeline/:id" element={<ProtectedRoute><NifiPipeline /></ProtectedRoute>} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

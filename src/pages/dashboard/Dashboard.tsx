@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Workflow, ArrowRight, Activity, Server, LineChart, Clock, AlertCircle, FolderKanban, Plus } from "lucide-react";
+import { Database, Workflow, ArrowRight, Activity, Server, LineChart, Clock, AlertCircle, FolderKanban, Plus, PlayCircle } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -301,6 +300,38 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
+        </div>
+        
+        {/* Add NiFi Pipeline Card */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">Your NiFi Pipeline</h2>
+          </div>
+          
+          <Card className="bg-gray-800 border-gray-700 shadow-lg hover:border-primary/30 transition-all">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-purple-900/50 text-purple-400 mr-4">
+                    <Workflow className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">PostgreSQL ETL Pipeline</h3>
+                    <p className="text-gray-400">Your existing NiFi pipeline for PostgreSQL ETL</p>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <Link to="/nifi-pipeline/root">
+                    <Button className="bg-purple-700 hover:bg-purple-800">
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Manage Pipeline
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </DashboardLayout>

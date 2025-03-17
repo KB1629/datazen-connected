@@ -19,6 +19,8 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { createWorkflow, runWorkflow as runWorkflowApi } from '@/lib/api';
 import { 
   ReactFlow, 
   Background, 
@@ -122,8 +124,10 @@ const CreateWorkflow = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeDragging, setNodeDragging] = useState(false);
+  const [workflowId, setWorkflowId] = useState<string | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodeIdCounter = useRef(1);
+  const navigate = useNavigate();
 
   const onConnect = useCallback((params: Connection) => {
     setEdges((eds) => addEdge({
@@ -223,16 +227,50 @@ const CreateWorkflow = () => {
     setNodeDragging(false);
   };
 
-  const saveWorkflow = () => {
-    toast.success(`Workflow "${workflowName}" saved successfully`);
+  const saveWorkflow = async () => {
+    try {
+      // Get source and destination from nodes
+      const sourceNode = nodes.find(n => n.type === 'databaseSource');
+      const destinationNode = nodes.find(n => n.type === 'destination');
+      
+      const workflowData = {
+        name: workflowName,
+        description: 'ETL workflow created via UI',
+        nodes,
+        edges,
+        source: sourceNode?.data?.connectionType || 'Unknown',
+        destination: destinationNode?.data?.connectionType || 'Unknown'
+      };
+
+      const savedWorkflow = await createWorkflow(workflowData);
+      setWorkflowId(savedWorkflow.id);
+      toast.success(`Workflow "${workflowName}" saved successfully`);
+      navigate('/workflows');
+    } catch (err) {
+      toast.error('Failed to save workflow');
+      console.error(err);
+    }
   };
 
-  const runWorkflow = () => {
+  const handleRunWorkflow = async () => {
     if (nodes.length === 0) {
       toast.error('No nodes in workflow to run');
       return;
     }
-    toast.success('Workflow started running');
+
+    try {
+      // First save the workflow if it hasn't been saved
+      if (!workflowId) {
+        await saveWorkflow();
+      }
+
+      // Then run it
+      await runWorkflowApi(workflowId!);
+      toast.success('Workflow started running');
+    } catch (err) {
+      toast.error('Failed to run workflow');
+      console.error(err);
+    }
   };
 
   return (
@@ -260,7 +298,7 @@ const CreateWorkflow = () => {
             </Button>
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
-              onClick={runWorkflow}
+              onClick={handleRunWorkflow}
             >
               <PlayCircle className="h-4 w-4 mr-2" />
               Run Workflow

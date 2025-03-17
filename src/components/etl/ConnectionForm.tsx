@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -15,6 +14,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
+import { testConnection } from '@/lib/api';
 
 // Define a more inclusive base schema that allows for all possible field names
 const baseConnectionSchema = z.object({
@@ -35,6 +35,12 @@ const baseConnectionSchema = z.object({
   keyFile: z.string().optional(),
   role: z.string().optional(),
   secure: z.boolean().optional(),
+  // Add fields for additional database types
+  server: z.string().optional(),
+  driver: z.string().optional(),
+  connectionString: z.string().optional(),
+  trustServerCertificate: z.boolean().optional(),
+  integratedSecurity: z.boolean().optional(),
 });
 
 // Additional validation for specific database types
@@ -44,6 +50,8 @@ const dbTypeSpecificSchemas = {
   sqlserver: z.object({
     instance: z.string().optional(),
     encrypt: z.boolean().optional(),
+    trustServerCertificate: z.boolean().optional(),
+    integratedSecurity: z.boolean().optional(),
   }),
   bigquery: z.object({
     projectId: z.string().min(1, { message: "Project ID is required" }),
@@ -60,6 +68,14 @@ const dbTypeSpecificSchemas = {
   trino: z.object({
     catalog: z.string().min(1, { message: "Catalog is required" }),
     schema: z.string().min(1, { message: "Schema is required" }),
+  }),
+  oracle: z.object({
+    serviceName: z.string().min(1, { message: "Service name is required" }),
+    connectionType: z.enum(["SID", "ServiceName"]),
+  }),
+  mongodb: z.object({
+    connectionString: z.string().optional(),
+    authSource: z.string().optional(),
   }),
 };
 
@@ -87,6 +103,8 @@ const defaultPorts: Record<string, string> = {
   snowflake: "443",
   clickhouse: "8123",
   trino: "8080",
+  oracle: "1521",
+  mongodb: "27017",
 };
 
 const ConnectionForm: React.FC<ConnectionFormProps> = ({ dbType, onCancel, onSubmit }) => {
@@ -135,27 +153,20 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ dbType, onCancel, onSub
     );
   };
 
-  const handleTestConnection = () => {
+  const handleTestConnection = async () => {
     const values = form.getValues();
     console.log('Testing connection with:', values);
     
-    toast.promise(
-      new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // 80% chance of success for demo purposes
-          if (Math.random() > 0.2) {
-            resolve(true);
-          } else {
-            reject(new Error("Could not connect to database"));
-          }
-        }, 1500);
-      }),
-      {
-        loading: 'Testing connection...',
-        success: 'Connection successful!',
-        error: (err) => `Connection failed: ${err.message}`,
-      }
-    );
+    try {
+      // Test connection via API
+      await testConnection({
+        ...values,
+        type: dbType.toLowerCase()
+      });
+      toast.success('Connection successful!');
+    } catch (err) {
+      toast.error(`Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
 
   // Determine which fields to show based on the database type

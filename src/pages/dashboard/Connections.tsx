@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +27,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { externalDataSources } from '@/data/dataSources';
+import { fetchConnections, createConnection, testConnection, deleteConnection } from '@/lib/api';
 
 interface Connection {
   id: string;
@@ -45,38 +45,61 @@ const Connections = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedDataSource, setSelectedDataSource] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Demo connections
-  const [connections, setConnections] = useState<Connection[]>([
-    {
-      id: '1',
-      name: 'Production DB',
-      type: 'PostgreSQL',
-      host: 'db.example.com',
-      status: 'Connected',
-      updatedAt: '2 hours ago',
-      icon: <Database className="h-8 w-8 text-blue-400" />
-    },
-    {
-      id: '2',
-      name: 'Analytics Warehouse',
-      type: 'BigQuery',
-      host: 'analytics-project.bigquery.com',
-      status: 'Connected',
-      updatedAt: '1 day ago',
-      icon: <Database className="h-8 w-8 text-yellow-400" />
-    },
-    {
-      id: '3',
-      name: 'Data Lake',
-      type: 'Snowflake',
-      host: 'company.snowflakecomputing.com',
-      status: 'Error',
-      error: 'Connection timeout',
-      updatedAt: '5 days ago',
-      icon: <FileSpreadsheet className="h-8 w-8 text-blue-300" />
-    }
-  ]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  
+  // Fetch connections from API
+  useEffect(() => {
+    const getConnections = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchConnections();
+        setConnections(data);
+      } catch (err) {
+        console.error('Failed to fetch connections:', err);
+        setError('Failed to load connections. Using demo data instead.');
+        // Set demo connections as fallback
+        setConnections([
+          {
+            id: '1',
+            name: 'Production DB',
+            type: 'PostgreSQL',
+            host: 'db.example.com',
+            status: 'Connected',
+            updatedAt: '2 hours ago',
+            icon: <Database className="h-8 w-8 text-blue-400" />
+          },
+          {
+            id: '2',
+            name: 'Analytics Warehouse',
+            type: 'BigQuery',
+            host: 'analytics-project.bigquery.com',
+            status: 'Connected',
+            updatedAt: '1 day ago',
+            icon: <Database className="h-8 w-8 text-yellow-400" />
+          },
+          {
+            id: '3',
+            name: 'Data Lake',
+            type: 'Snowflake',
+            host: 'company.snowflakecomputing.com',
+            status: 'Error',
+            error: 'Connection timeout',
+            updatedAt: '5 days ago',
+            icon: <FileSpreadsheet className="h-8 w-8 text-blue-300" />
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getConnections();
+  }, []);
   
   // Filter data sources based on search term
   const filteredDataSources = externalDataSources.filter(source => 
@@ -110,7 +133,7 @@ const Connections = () => {
     setIsFormOpen(false);
   };
   
-  const handleCreateConnection = (data: any) => {
+  const handleCreateConnection = async (data: any) => {
     // Get the selected data source
     const dataSource = externalDataSources.find(source => source.id === selectedDataSource);
     
@@ -119,20 +142,24 @@ const Connections = () => {
       return;
     }
     
-    // Create a new connection
-    const newConnection: Connection = {
-      id: Date.now().toString(),
-      name: data.name,
-      type: dataSource.name,
-      host: data.host,
-      status: 'Connected',
-      updatedAt: 'Just now',
-      icon: dataSource.icon,
-    };
-    
-    setConnections([...connections, newConnection]);
-    toast.success(`Connection to ${dataSource.name} created successfully!`);
-    setIsFormOpen(false);
+    try {
+      // Create connection via API
+      const connectionData = {
+        ...data,
+        type: dataSource.name
+      };
+      
+      const newConnection = await createConnection(connectionData);
+      
+      // Add icon for UI display
+      newConnection.icon = dataSource.icon;
+      
+      setConnections([...connections, newConnection]);
+      toast.success(`Connection to ${dataSource.name} created successfully!`);
+      setIsFormOpen(false);
+    } catch (err) {
+      toast.error(`Failed to create connection: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
   
   const getSelectedDataSourceName = () => {

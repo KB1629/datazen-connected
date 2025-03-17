@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,9 +40,11 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Workflow,
 } from "lucide-react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { toast } from "sonner";
+import { fetchWorkflows, runWorkflow, pauseWorkflow, deleteWorkflow } from '@/lib/api';
 
 // Mock data for workflows
 const mockWorkflows = [
@@ -107,7 +108,30 @@ const mockWorkflows = [
 const Workflows = () => {
   const [workflows, setWorkflows] = useState(mockWorkflows);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Fetch workflows from API
+  useEffect(() => {
+    const getWorkflows = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchWorkflows();
+        setWorkflows(data);
+      } catch (err) {
+        console.error('Failed to fetch workflows:', err);
+        setError('Failed to load workflows. Using mock data instead.');
+        // Fallback to mock data
+        setWorkflows(mockWorkflows);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getWorkflows();
+  }, []);
 
   // Filter workflows based on search query
   const filteredWorkflows = workflows.filter(
@@ -119,27 +143,48 @@ const Workflows = () => {
   );
 
   // Action handlers
-  const handleRunWorkflow = (id: number) => {
-    toast.success(`Started workflow #${id}`);
-    setWorkflows(
-      workflows.map((w) =>
-        w.id === id ? { ...w, status: "running", lastRun: "Running now" } : w
-      )
-    );
+  const handleRunWorkflow = async (id: number) => {
+    try {
+      await runWorkflow(id.toString());
+      toast.success(`Started workflow #${id}`);
+      // Update local state
+      setWorkflows(
+        workflows.map((w) =>
+          w.id === id ? { ...w, status: "running", lastRun: "Running now" } : w
+        )
+      );
+    } catch (err) {
+      toast.error(`Failed to start workflow #${id}`);
+      console.error(err);
+    }
   };
 
-  const handlePauseWorkflow = (id: number) => {
-    toast.success(`Paused workflow #${id}`);
-    setWorkflows(
-      workflows.map((w) =>
-        w.id === id ? { ...w, status: "paused", schedule: "Paused" } : w
-      )
-    );
+  const handlePauseWorkflow = async (id: number) => {
+    try {
+      await pauseWorkflow(id.toString());
+      toast.success(`Paused workflow #${id}`);
+      // Update local state
+      setWorkflows(
+        workflows.map((w) =>
+          w.id === id ? { ...w, status: "paused", schedule: "Paused" } : w
+        )
+      );
+    } catch (err) {
+      toast.error(`Failed to pause workflow #${id}`);
+      console.error(err);
+    }
   };
 
-  const handleDeleteWorkflow = (id: number) => {
-    toast.success(`Deleted workflow #${id}`);
-    setWorkflows(workflows.filter((w) => w.id !== id));
+  const handleDeleteWorkflow = async (id: number) => {
+    try {
+      await deleteWorkflow(id.toString());
+      toast.success(`Deleted workflow #${id}`);
+      // Update local state
+      setWorkflows(workflows.filter((w) => w.id !== id));
+    } catch (err) {
+      toast.error(`Failed to delete workflow #${id}`);
+      console.error(err);
+    }
   };
 
   const handleDuplicateWorkflow = (id: number) => {
@@ -212,13 +257,24 @@ const Workflows = () => {
             <p className="text-gray-400 mt-1">Manage your ETL workflows and transformations</p>
           </div>
 
-          <Button
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => navigate("/workflows/create")}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Workflow
-          </Button>
+          <div className="flex space-x-2">
+            <Link to="/nifi-pipeline/root">
+              <Button 
+                variant="outline" 
+                className="border-purple-700 text-purple-400 hover:bg-purple-950"
+              >
+                <Workflow className="h-4 w-4 mr-2" />
+                Manage NiFi Pipeline
+              </Button>
+            </Link>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => navigate("/workflows/create")}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Workflow
+            </Button>
+          </div>
         </div>
 
         {/* Search & Filters */}
