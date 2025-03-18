@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitHub Push Instructions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #0366d6;
+        }
+        code {
+            background-color: #f6f8fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            white-space: pre;
+        }
+        .method {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .note {
+            background-color: #fffbdd;
+            padding: 10px;
+            border-left: 4px solid #ffd33d;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>GitHub Push Instructions for DataZen</h1>
+    <p>Follow these instructions to push your code to GitHub repository: <a href="https://github.com/KB1629/DataZen.git">https://github.com/KB1629/DataZen.git</a></p>
+
+    <div class="method">
+        <h2>Method 1: Using Command Line</h2>
+        <p>Open a new PowerShell window and run the following commands:</p>
+        
+        <code>cd C:\nifi-api-integration\DataZen
+
+# Add all files
+git add .
+
+# Commit changes
+git commit -m "Add NiFi integration with certificate-based authentication"
+
+# Configure remote with your username
+git remote set-url origin https://KB1629@github.com/KB1629/DataZen.git
+
+# Push to GitHub (you'll be prompted for password/token)
+git push origin main</code>
+    </div>
+
+    <div class="note">
+        <p><strong>Note:</strong> If you have two-factor authentication enabled on GitHub, you must use a personal access token instead of your password.</p>
+    </div>
+
+    <div class="method">
+        <h2>Method 2: Using a Personal Access Token</h2>
+        <p>If you have two-factor authentication enabled or regular password authentication doesn't work:</p>
+        <ol>
+            <li>Go to <a href="https://github.com/settings/tokens">https://github.com/settings/tokens</a></li>
+            <li>Click "Generate new token" (classic)</li>
+            <li>Give it a name like "DataZen Push"</li>
+            <li>Select the "repo" scope</li>
+            <li>Click "Generate token" and copy the token</li>
+        </ol>
+        <p>Then use the token in your command line:</p>
+        <code>cd C:\nifi-api-integration\DataZen
+
+# Set the remote URL with token
+git remote set-url origin https://KB1629:YOUR_TOKEN@github.com/KB1629/DataZen.git
+
+# Push to GitHub
+git push origin main
+
+# Reset the remote URL for security
+git remote set-url origin https://github.com/KB1629/DataZen.git</code>
+        <p>Replace YOUR_TOKEN with the actual token you generated.</p>
+    </div>
+
+    <div class="method">
+        <h2>Method 3: Using GitHub Desktop</h2>
+        <p>If command line doesn't work for you:</p>
+        <ol>
+            <li>Install <a href="https://desktop.github.com/">GitHub Desktop</a></li>
+            <li>Open GitHub Desktop and login to your account</li>
+            <li>Add your local repository (File > Add local repository)</li>
+            <li>Navigate to C:\nifi-api-integration\DataZen</li>
+            <li>Commit your changes and push to GitHub</li>
+        </ol>
+    </div>
+
+    <div class="method">
+        <h2>Method 4: Manual Upload</h2>
+        <p>If all else fails, you can manually upload your files:</p>
+        <ol>
+            <li>Go to <a href="https://github.com/KB1629/DataZen">https://github.com/KB1629/DataZen</a></li>
+            <li>Click "Add file" > "Upload files"</li>
+            <li>Drag and drop your files or select them using the file browser</li>
+            <li>Add a commit message and click "Commit changes"</li>
+        </ol>
+        <p>You may need to do this multiple times for different folders if there are many files.</p>
+    </div>
+</body>
+</html> 

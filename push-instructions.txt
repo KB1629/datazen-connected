@@ -1,0 +1,24 @@
+# GitHub Push Instructions
+
+# Follow these steps in a new PowerShell window:
+# 1. Navigate to your project directory:
+cd C:\nifi-api-integration\DataZen
+
+# 2. Add all files:
+git add .
+
+# 3. Commit the changes:
+git commit -m "Add NiFi integration with certificate-based authentication"
+
+# 4. Configure remote URL with your username:
+git remote set-url origin https://KB1629@github.com/KB1629/DataZen.git
+
+# 5. Push to GitHub (you'll be prompted for your password or token):
+git push origin main
+
+# If you have two-factor authentication enabled, you'll need to use a personal access token
+# You can create one at: https://github.com/settings/tokens
+
+# Alternative method with token (replace YOUR_TOKEN with your actual token):
+# git remote set-url origin https://KB1629:YOUR_TOKEN@github.com/KB1629/DataZen.git
+# git push origin main 
