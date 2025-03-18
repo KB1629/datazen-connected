@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const https = require('https');
 require('dotenv').config();
 const nifiService = require('./nifiService');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
@@ -17,6 +18,27 @@ app.use(morgan('dev'));
 
 // Configuration
 const PORT = process.env.PORT || 3001;
+
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-for-jwt';
+
+// Middleware to authenticate JWT token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+}
 
 // In-memory storage for workflows (replace with database in production)
 let workflows = [];
@@ -285,24 +307,86 @@ app.post('/api/transform/schema', async (req, res) => {
   }
 });
 
-// Test NiFi Connection
+// NiFi Routes - Temporarily bypassing authentication for all NiFi routes
+app.get('/api/nifi/process-groups', async (req, res) => {
+  try {
+    const processGroups = await nifiService.getProcessGroups();
+    res.json(processGroups);
+  } catch (error) {
+    console.error('Error getting NiFi process groups:', error);
+    res.status(500).json({ error: 'Failed to get NiFi process groups' });
+  }
+});
+
+// Get specific process group
+app.get('/api/nifi/process-groups/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const processGroup = await nifiService.getProcessGroup(id);
+    res.json(processGroup);
+  } catch (error) {
+    console.error(`Error getting NiFi process group ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Failed to get NiFi process group' });
+  }
+});
+
+// Get process group status
+app.get('/api/nifi/process-groups/:id/status', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const status = await nifiService.getProcessGroupStatus(id);
+    res.json(status);
+  } catch (error) {
+    console.error(`Error getting NiFi process group status ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Failed to get NiFi process group status' });
+  }
+});
+
+// Start process group
+app.post('/api/nifi/process-groups/:id/start', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await nifiService.startProcessGroup(id);
+    res.json(result);
+  } catch (error) {
+    console.error(`Error starting NiFi process group ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Failed to start NiFi process group' });
+  }
+});
+
+// Stop process group
+app.post('/api/nifi/process-groups/:id/stop', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await nifiService.stopProcessGroup(id);
+    res.json(result);
+  } catch (error) {
+    console.error(`Error stopping NiFi process group ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Failed to stop NiFi process group' });
+  }
+});
+
+// Get process group metrics
+app.get('/api/nifi/process-groups/:id/metrics', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const metrics = await nifiService.getProcessGroupMetrics(id);
+    res.json(metrics);
+  } catch (error) {
+    console.error(`Error getting NiFi process group metrics ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Failed to get NiFi process group metrics' });
+  }
+});
+
+// Test NiFi Connection - temporarily bypassing authentication for testing
 app.get('/api/nifi/test', async (req, res) => {
   try {
-    console.log('Received request to test NiFi connection');
-    const result = await nifiService.testNiFiConnection();
-    console.log('NiFi test result:', result);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json(result);
-    }
+    console.log('Testing NiFi connection...');
+    const result = await nifiService.checkServerRunning();
+    res.json({ success: result, message: result ? 'Connected to NiFi server' : 'Could not connect to NiFi server' });
   } catch (error) {
     console.error('Error testing NiFi connection:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to test NiFi connection',
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: `Error: ${error.message}` });
   }
 });
 
@@ -324,7 +408,7 @@ app.post('/api/workflows/:id/configure', async (req, res) => {
   }
 });
 
-// Existing NiFi Pipeline API
+// Existing NiFi Pipeline API - Temporarily bypassing authentication for testing
 app.get('/api/nifi/pipeline/:id', async (req, res) => {
   try {
     const { id } = req.params;

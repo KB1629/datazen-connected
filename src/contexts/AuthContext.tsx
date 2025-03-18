@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -10,11 +9,13 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  getAuthHeaders: () => { 'Content-Type': string; 'Authorization': string };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +30,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Removed the useNavigate hook to fix the error
@@ -36,13 +38,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Check if user is logged in from localStorage
     const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
     
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
+        if (storedToken) {
+          setToken(storedToken);
+        }
       } catch (error) {
         console.error("Failed to parse stored user", error);
         localStorage.removeItem("user");
+        localStorage.removeItem("token");
       }
     }
     
@@ -68,9 +75,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           name: email.split('@')[0]
         };
         
-        // Store user in state and localStorage
+        // Create a mock JWT token (in a real app, this would come from the server)
+        const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEiLCJlbWFpbCI6IiR7ZW1haWx9IiwibmFtZSI6IiR7ZW1haWwuc3BsaXQoJ0AnKVswXX0iLCJpYXQiOjE2MTkwOTUyMjB9.mockSignature`;
+        
+        // Store user and token in state and localStorage
         setUser(userData);
+        setToken(mockToken);
         localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("token", mockToken);
         
         toast.success("Login successful! Welcome to DataZen Flow.");
         
@@ -108,9 +120,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         name
       };
       
-      // Store user in state and localStorage
+      // Create a mock JWT token (in a real app, this would come from the server)
+      const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLSR7RGF0ZS5ub3coKX0iLCJlbWFpbCI6IiR7ZW1haWx9IiwibmFtZSI6IiR7bmFtZX0iLCJpYXQiOjE2MTkwOTUyMjB9.mockSignature`;
+      
+      // Store user and token in state and localStorage
       setUser(userData);
+      setToken(mockToken);
       localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("token", mockToken);
       
       toast.success("Registration successful! Welcome to DataZen Flow.");
       
@@ -126,20 +143,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     toast.success("Logout successful!");
     // Instead of using navigate, we'll let the component handle navigation
+  };
+
+  const getAuthHeaders = () => {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    };
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        token,
+        isAuthenticated: !!user && !!token,
         loading,
         login,
         register,
-        logout
+        logout,
+        getAuthHeaders
       }}
     >
       {children}

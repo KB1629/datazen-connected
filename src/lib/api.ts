@@ -1,15 +1,35 @@
 // API service for communicating with the NiFi integration backend
 
 // Define the API base URL
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+
+// Helper function to get auth headers with token
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+}
+
+// Helper function to handle API responses
+const handleResponse = async (response: Response) => {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+};
 
 // Workflows API
 export const fetchWorkflows = async () => {
-  const response = await fetch(`${API_BASE_URL}/workflows`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch workflows');
+  try {
+    const response = await fetch(`${API_BASE_URL}/workflows`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error fetching workflows:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const createWorkflow = async (workflowData: any) => {
@@ -27,70 +47,82 @@ export const createWorkflow = async (workflowData: any) => {
 };
 
 export const runWorkflow = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/workflows/${id}/run`, {
-    method: 'POST',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to run workflow');
+  try {
+    const response = await fetch(`${API_BASE_URL}/workflows/${id}/run`, {
+      method: 'POST',
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error running workflow:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const pauseWorkflow = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/workflows/${id}/pause`, {
-    method: 'POST',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to pause workflow');
+  try {
+    const response = await fetch(`${API_BASE_URL}/workflows/${id}/pause`, {
+      method: 'POST',
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error pausing workflow:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const deleteWorkflow = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/workflows/${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete workflow');
+  try {
+    const response = await fetch(`${API_BASE_URL}/workflows/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error deleting workflow:', error);
+    throw error;
   }
-  return response.json();
 };
 
 // Database Connections API
 export const fetchConnections = async () => {
-  const response = await fetch(`${API_BASE_URL}/connections`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch connections');
+  try {
+    const response = await fetch(`${API_BASE_URL}/connections`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error fetching connections:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const createConnection = async (connectionData: any) => {
-  const response = await fetch(`${API_BASE_URL}/connections`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(connectionData),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create connection');
+  try {
+    const response = await fetch(`${API_BASE_URL}/connections`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(connectionData),
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error creating connection:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const testConnection = async (connectionData: any) => {
-  const response = await fetch(`${API_BASE_URL}/connections/test`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(connectionData),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to test connection');
+  try {
+    const response = await fetch(`${API_BASE_URL}/connections/test`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(connectionData),
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error testing connection:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const deleteConnection = async (id: string) => {
@@ -123,86 +155,106 @@ export const transformSchema = async (sourceSchema: any, transformationRules: an
 
 // NiFi API
 export const testNiFiConnection = async () => {
-  const response = await fetch(`${API_BASE_URL}/nifi/test`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
+  try {
+    const response = await fetch(`${API_BASE_URL}/nifi/test`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to test NiFi connection: ${response.status}`);
     }
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to test NiFi connection');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error testing NiFi connection:', error);
+    return { success: false, message: error.message };
   }
-  return response.json();
 };
 
 // Existing NiFi Pipeline API
 export const getNifiPipeline = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/nifi/pipeline/${id}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
+  try {
+    const response = await fetch(`${API_BASE_URL}/nifi/process-groups/${id}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get pipeline details: ${response.status}`);
     }
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to get NiFi pipeline');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching NiFi pipeline:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const getNifiPipelineStatus = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/nifi/pipeline/${id}/status`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
+  try {
+    const response = await fetch(`${API_BASE_URL}/nifi/process-groups/${id}/status`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get pipeline status: ${response.status}`);
     }
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to get NiFi pipeline status');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching NiFi pipeline status:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const startNifiPipeline = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/nifi/pipeline/${id}/start`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  try {
+    const response = await fetch(`${API_BASE_URL}/nifi/process-groups/${id}/start`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to start pipeline: ${response.status}`);
     }
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to start NiFi pipeline');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error starting NiFi pipeline:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const stopNifiPipeline = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/nifi/pipeline/${id}/stop`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  try {
+    const response = await fetch(`${API_BASE_URL}/nifi/process-groups/${id}/stop`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to stop pipeline: ${response.status}`);
     }
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to stop NiFi pipeline');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error stopping NiFi pipeline:', error);
+    throw error;
   }
-  return response.json();
 };
 
 export const getNifiPipelineMetrics = async (id: string) => {
-  const response = await fetch(`${API_BASE_URL}/nifi/pipeline/${id}/metrics`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
+  try {
+    const response = await fetch(`${API_BASE_URL}/nifi/process-groups/${id}/metrics`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get pipeline metrics: ${response.status}`);
     }
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to get NiFi pipeline metrics');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching NiFi pipeline metrics:', error);
+    throw error;
   }
-  return response.json();
 }; 
