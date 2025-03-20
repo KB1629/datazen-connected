@@ -647,11 +647,315 @@ const createDatabaseConnectionService = async (processGroupId, connectionData) =
 // Test a database connection
 const testDatabaseConnection = async (connectionData) => {
   try {
-    return { success: true };
+    const { type, host, port, database, username, password } = connectionData;
+    
+    console.log(`Testing connection to ${type} database at ${host}:${port}`);
+    
+    // If we're in mock mode, always succeed
+    if (MOCK_NIFI_API) {
+      return { success: true, message: `Successfully connected to ${type} database` };
+    }
+    
+    // Different connection test logic based on database type
+    switch (type.toLowerCase()) {
+      case 'postgresql': {
+        // For PostgreSQL, we can use the 'pg' package
+        try {
+          // Dynamically import pg
+          const { Pool } = await import('pg');
+          
+          // Create connection pool
+          const pool = new Pool({
+            host,
+            port,
+            database,
+            user: username,
+            password,
+            connectionTimeoutMillis: 5000, // 5 seconds
+            ssl: connectionData.ssl ? { rejectUnauthorized: false } : false
+          });
+          
+          // Attempt connection
+          const client = await pool.connect();
+          const result = await client.query('SELECT 1 as connection_test');
+          client.release();
+          await pool.end();
+          
+          // Get database tables
+          const tables = await getPostgresqlTables(connectionData);
+          
+          return { 
+            success: true, 
+            message: `Successfully connected to PostgreSQL database at ${host}:${port}`,
+            tables
+          };
+        } catch (err) {
+          console.error('PostgreSQL connection error:', err);
+          throw new Error(`Failed to connect to PostgreSQL: ${err.message}`);
+        }
+      }
+      
+      case 'mysql': {
+        try {
+          // Dynamically import mysql2
+          const mysql = await import('mysql2/promise');
+          
+          // Create connection
+          const connection = await mysql.createConnection({
+            host,
+            port,
+            database,
+            user: username,
+            password,
+            connectTimeout: 5000, // 5 seconds
+            ssl: connectionData.ssl ? { rejectUnauthorized: false } : false
+          });
+          
+          // Test connection
+          await connection.query('SELECT 1 as connection_test');
+          await connection.end();
+          
+          // Get database tables
+          const tables = await getMysqlTables(connectionData);
+          
+          return { 
+            success: true, 
+            message: `Successfully connected to MySQL database at ${host}:${port}`,
+            tables
+          };
+        } catch (err) {
+          console.error('MySQL connection error:', err);
+          throw new Error(`Failed to connect to MySQL: ${err.message}`);
+        }
+      }
+      
+      case 'sqlserver': 
+      case 'sql server': {
+        try {
+          // Dynamically import mssql
+          const sql = await import('mssql');
+          
+          // Create connection config
+          const config = {
+            server: host,
+            port: parseInt(port),
+            database,
+            user: username,
+            password,
+            options: {
+              trustServerCertificate: true,
+              connectTimeout: 5000 // 5 seconds
+            }
+          };
+          
+          // Test connection
+          const pool = await sql.connect(config);
+          await pool.request().query('SELECT 1 as connection_test');
+          await pool.close();
+          
+          // Get database tables
+          const tables = await getMssqlTables(connectionData);
+          
+          return { 
+            success: true, 
+            message: `Successfully connected to SQL Server database at ${host}:${port}`,
+            tables
+          };
+        } catch (err) {
+          console.error('SQL Server connection error:', err);
+          throw new Error(`Failed to connect to SQL Server: ${err.message}`);
+        }
+      }
+      
+      default:
+        return { 
+          success: true, 
+          message: `Connection test for ${type} not implemented yet, but assumed successful`
+        };
+    }
   } catch (error) {
     console.error('Error testing database connection:', error);
     throw error;
   }
+};
+
+// Helper function to get PostgreSQL tables
+async function getPostgresqlTables(connectionData) {
+  try {
+    const { host, port, database, username, password } = connectionData;
+    const { Pool } = await import('pg');
+    
+    const pool = new Pool({
+      host,
+      port,
+      database,
+      user: username,
+      password,
+      ssl: connectionData.ssl ? { rejectUnauthorized: false } : false
+    });
+    
+    const result = await pool.query(`
+      SELECT table_name, column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      ORDER BY table_name, ordinal_position
+    `);
+    
+    // Group columns by table
+    const tables = {};
+    for (const row of result.rows) {
+      if (!tables[row.table_name]) {
+        tables[row.table_name] = [];
+      }
+      tables[row.table_name].push({
+        name: row.column_name,
+        type: row.data_type
+      });
+    }
+    
+    await pool.end();
+    return tables;
+  } catch (error) {
+    console.error('Error getting PostgreSQL tables:', error);
+    return {};
+  }
+}
+
+// Helper function to get MySQL tables
+async function getMysqlTables(connectionData) {
+  try {
+    const { host, port, database, username, password } = connectionData;
+    const mysql = await import('mysql2/promise');
+    
+    const connection = await mysql.createConnection({
+      host,
+      port,
+      database,
+      user: username,
+      password,
+      ssl: connectionData.ssl ? { rejectUnauthorized: false } : false
+    });
+    
+    const [rows] = await connection.query(`
+      SELECT table_name, column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_schema = ? 
+      ORDER BY table_name, ordinal_position
+    `, [database]);
+    
+    // Group columns by table
+    const tables = {};
+    for (const row of rows) {
+      if (!tables[row.TABLE_NAME]) {
+        tables[row.TABLE_NAME] = [];
+      }
+      tables[row.TABLE_NAME].push({
+        name: row.COLUMN_NAME,
+        type: row.DATA_TYPE
+      });
+    }
+    
+    await connection.end();
+    return tables;
+  } catch (error) {
+    console.error('Error getting MySQL tables:', error);
+    return {};
+  }
+}
+
+// Helper function to get SQL Server tables
+async function getMssqlTables(connectionData) {
+  try {
+    const { host, port, database, username, password } = connectionData;
+    const sql = await import('mssql');
+    
+    const config = {
+      server: host,
+      port: parseInt(port),
+      database,
+      user: username,
+      password,
+      options: {
+        trustServerCertificate: true
+      }
+    };
+    
+    const pool = await sql.connect(config);
+    const result = await pool.request().query(`
+      SELECT 
+        t.name AS table_name,
+        c.name AS column_name,
+        TYPE_NAME(c.user_type_id) AS data_type
+      FROM 
+        sys.tables t
+        INNER JOIN sys.columns c ON t.object_id = c.object_id
+      ORDER BY 
+        t.name, c.column_id
+    `);
+    
+    // Group columns by table
+    const tables = {};
+    for (const row of result.recordset) {
+      if (!tables[row.table_name]) {
+        tables[row.table_name] = [];
+      }
+      tables[row.table_name].push({
+        name: row.column_name,
+        type: row.data_type
+      });
+    }
+    
+    await pool.close();
+    return tables;
+  } catch (error) {
+    console.error('Error getting SQL Server tables:', error);
+    return {};
+  }
+}
+
+// Helper function to get the appropriate controller service type for a database
+const getDatabaseControllerServiceType = (dbType) => {
+  return 'org.apache.nifi.dbcp.DBCPConnectionPool';
+};
+
+// Helper function to get the appropriate connection properties for a database
+const getDatabaseProperties = (connectionData) => {
+  const { type, host, port, database, username, password } = connectionData;
+  
+  // Default properties for PostgreSQL
+  let properties = {
+    'Database Connection URL': `jdbc:postgresql://${host}:${port}/${database}`,
+    'Database User': username,
+    'Password': password,
+    'Database Driver Class Name': 'org.postgresql.Driver',
+    'Database Driver Location': '/opt/nifi/nifi-current/lib/postgresql-42.2.18.jar',
+  };
+  
+  // Customize based on database type
+  switch (type.toLowerCase()) {
+    case 'mysql':
+      properties = {
+        'Database Connection URL': `jdbc:mysql://${host}:${port}/${database}`,
+        'Database User': username,
+        'Password': password,
+        'Database Driver Class Name': 'com.mysql.cj.jdbc.Driver',
+        'Database Driver Location': '/opt/nifi/nifi-current/lib/mysql-connector-java-8.0.28.jar',
+      };
+      break;
+      
+    case 'sqlserver':
+    case 'sql server':
+      properties = {
+        'Database Connection URL': `jdbc:sqlserver://${host}:${port};databaseName=${database};trustServerCertificate=true`,
+        'Database User': username,
+        'Password': password,
+        'Database Driver Class Name': 'com.microsoft.sqlserver.jdbc.SQLServerDriver',
+        'Database Driver Location': '/opt/nifi/nifi-current/lib/mssql-jdbc-9.4.0.jre11.jar',
+      };
+      break;
+  }
+  
+  return properties;
 };
 
 // Configure ETL pipeline
@@ -797,23 +1101,6 @@ const getExistingPipelineMetrics = async (pipelineId) => {
     console.error('Error getting pipeline metrics:', error);
     throw error;
   }
-};
-
-// Helper function to get the appropriate controller service type for a database
-const getDatabaseControllerServiceType = (dbType) => {
-  return 'org.apache.nifi.dbcp.DBCPConnectionPool';
-};
-
-// Helper function to get the appropriate connection properties for a database
-const getDatabaseProperties = (connectionData) => {
-  const { host, port, database, username, password } = connectionData;
-  return {
-    'Database Connection URL': `jdbc:postgresql://${host}:${port}/${database}`,
-    'Database User': username,
-    'Password': password,
-    'Database Driver Class Name': 'org.postgresql.Driver',
-    'Database Driver Location': '/opt/nifi/nifi-current/lib/postgresql-42.2.18.jar',
-  };
 };
 
 module.exports = {

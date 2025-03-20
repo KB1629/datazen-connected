@@ -43,6 +43,21 @@ function authenticateToken(req, res, next) {
 // In-memory storage for workflows (replace with database in production)
 let workflows = [];
 
+// In-memory storage for connections (replace with database in production)
+let connections = [
+  {
+    id: '1',
+    name: 'Source PostgreSQL',
+    type: 'PostgreSQL',
+    host: 'localhost',
+    port: '5432',
+    username: 'postgres',
+    database: 'source_db',
+    status: 'Connected',
+    updatedAt: new Date().toISOString()
+  }
+];
+
 // Routes
 app.get('/', (req, res) => {
   res.json({
@@ -186,33 +201,6 @@ app.delete('/api/workflows/:id', async (req, res) => {
 // Connections API
 app.get('/api/connections', async (req, res) => {
   try {
-    // In a production environment, you would fetch connections from a database
-    // For now, we'll return mock data focused on PostgreSQL
-    const connections = [
-      {
-        id: '1',
-        name: 'Source PostgreSQL',
-        type: 'PostgreSQL',
-        host: 'localhost',
-        port: '5432',
-        username: 'postgres',
-        database: 'source_db',
-        status: 'Connected',
-        updatedAt: '2 hours ago'
-      },
-      {
-        id: '2',
-        name: 'Destination PostgreSQL',
-        type: 'PostgreSQL',
-        host: 'localhost',
-        port: '5432',
-        username: 'postgres',
-        database: 'destination_db',
-        status: 'Connected',
-        updatedAt: '1 day ago'
-      }
-    ];
-    
     res.json(connections);
   } catch (error) {
     console.error('Error fetching connections:', error);
@@ -222,14 +210,16 @@ app.get('/api/connections', async (req, res) => {
 
 app.post('/api/connections', async (req, res) => {
   try {
-    // In a production environment, you would store the connection in a database
-    // For now, we'll just return the data that was sent
+    // Create a new connection
     const newConnection = {
       id: Date.now().toString(),
       ...req.body,
       status: 'Connected',
-      updatedAt: 'Just now'
+      updatedAt: new Date().toISOString()
     };
+    
+    // Add to in-memory storage
+    connections.push(newConnection);
     
     res.status(201).json(newConnection);
   } catch (error) {
@@ -242,21 +232,33 @@ app.post('/api/connections/test', async (req, res) => {
   try {
     const connectionData = req.body;
     
-    // Try to test the connection using NiFi service
-    try {
-      await nifiService.testDatabaseConnection(connectionData);
-    } catch (nifiError) {
-      console.error('Error testing connection with NiFi:', nifiError);
-      // Randomly fail some connection tests for demonstration
-      if (Math.random() < 0.2) {
-        throw new Error('Connection failed: Could not connect to database');
-      }
-    }
+    console.log('Testing database connection with:', {
+      type: connectionData.type,
+      host: connectionData.host,
+      port: connectionData.port,
+      database: connectionData.database,
+      username: connectionData.username,
+      // Password omitted for security
+    });
     
-    res.json({ success: true, message: 'Connection successful' });
+    // Test the connection using NiFi service
+    const result = await nifiService.testDatabaseConnection(connectionData);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message || 'Connection successful',
+        tables: result.tables || {}
+      });
+    } else {
+      throw new Error(result.message || 'Connection failed');
+    }
   } catch (error) {
     console.error('Error testing connection:', error);
-    res.status(500).json({ error: error.message || 'Failed to test connection' });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to test connection' 
+    });
   }
 });
 
@@ -264,8 +266,8 @@ app.delete('/api/connections/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // In a production environment, you would delete the connection from a database
-    // For now, we'll just return a success message
+    // Remove from in-memory storage
+    connections = connections.filter(conn => conn.id !== id);
     
     res.json({ success: true, message: `Connection ${id} deleted successfully` });
   } catch (error) {

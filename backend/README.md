@@ -1,112 +1,104 @@
-# NiFi Integration Service
+# DataZen Backend
 
-This service provides an API layer between the DataZen frontend and Apache NiFi for ETL operations.
+This directory contains the backend server for the DataZen ETL platform. It provides the API endpoints for the frontend and integrates with Apache NiFi for ETL pipeline management.
 
-## Overview
+## Components
 
-The NiFi Integration Service acts as a middleware between the DataZen frontend and Apache NiFi. It provides RESTful APIs for:
+- **server.js**: Main Express server that handles API requests
+- **nifiService.js**: Service that communicates with Apache NiFi API
+- **start.js**: Entry point for the server
+- **test-nifi.js**: Script to test NiFi connectivity
 
-1. Managing ETL workflows (NiFi process groups)
-2. Managing database connections
-3. Transforming schemas using Google Gemini Flash 2.2 API
+## Features
 
-## Setup
+### NiFi Integration
 
-### Prerequisites
+The backend server integrates with Apache NiFi to:
+- Fetch and manage process groups (workflows)
+- Start and stop pipelines
+- Monitor pipeline status
+- Create and configure processors
 
-- Node.js 14+ and npm
-- Apache NiFi instance running
-- Access to Google Gemini Flash 2.2 API (for schema transformation)
+### Database Connection Management
 
-### Installation
+The server provides APIs to:
+- Test connections to various database types (PostgreSQL, MySQL, SQL Server)
+- Retrieve database schema information
+- Store and manage connection details
 
-1. Clone this repository
-2. Navigate to the backend directory
-3. Install dependencies:
+## Configuration
 
-```bash
-npm install
-```
+### Environment Variables
 
-4. Create a `.env` file with the following variables:
+Create a `.env` file in the backend directory with the following variables:
 
 ```
 PORT=3001
-NIFI_API_URL=http://your-nifi-instance:8080/nifi-api
-# Add your NiFi authentication details if needed
-# NIFI_USERNAME=admin
-# NIFI_PASSWORD=password
+JWT_SECRET=your_secret_key
+NIFI_API_URL=https://localhost:8443/nifi-api
+NIFI_USERNAME=your_nifi_username
+NIFI_PASSWORD=your_nifi_password
+NIFI_SSL_VERIFY=false
+NIFI_AUTH_METHOD=password
+MOCK_NIFI_API=false
 ```
 
-5. Start the server:
-
-```bash
-npm start
-```
-
-For development with auto-reload:
-
-```bash
-npm run dev
-```
+- `PORT`: Port for the backend server
+- `JWT_SECRET`: Secret for JWT authentication
+- `NIFI_API_URL`: URL of the NiFi API
+- `NIFI_USERNAME`: Username for NiFi authentication
+- `NIFI_PASSWORD`: Password for NiFi authentication
+- `NIFI_SSL_VERIFY`: Whether to verify SSL certificates
+- `NIFI_AUTH_METHOD`: Authentication method (password, certificate)
+- `MOCK_NIFI_API`: Use mock API responses for testing
 
 ## API Endpoints
 
-### Workflows
+### Workflows API
+- GET `/api/workflows`: Get all workflows
+- POST `/api/workflows`: Create a new workflow
+- GET `/api/workflows/:id`: Get a specific workflow
+- POST `/api/workflows/:id/run`: Run a workflow
+- POST `/api/workflows/:id/pause`: Pause a workflow
+- DELETE `/api/workflows/:id`: Delete a workflow
 
-- `GET /api/workflows` - Get all workflows
-- `POST /api/workflows` - Create a new workflow
-- `POST /api/workflows/:id/run` - Run a workflow
-- `POST /api/workflows/:id/pause` - Pause a workflow
-- `DELETE /api/workflows/:id` - Delete a workflow
+### Connections API
+- GET `/api/connections`: Get all database connections
+- POST `/api/connections`: Create a new connection
+- POST `/api/connections/test`: Test a database connection
+- DELETE `/api/connections/:id`: Delete a connection
 
-### Connections
+### NiFi API
+- GET `/api/nifi/test`: Test connection to NiFi
+- GET `/api/nifi/process-groups`: Get all process groups
+- GET `/api/nifi/process-groups/:id`: Get a specific process group
+- GET `/api/nifi/process-groups/:id/status`: Get status of a process group
+- POST `/api/nifi/process-groups/:id/start`: Start a process group
+- POST `/api/nifi/process-groups/:id/stop`: Stop a process group
 
-- `GET /api/connections` - Get all database connections
-- `POST /api/connections` - Create a new database connection
-- `POST /api/connections/test` - Test a database connection
-- `DELETE /api/connections/:id` - Delete a database connection
+## Running the Server
 
-### Schema Transformation
+```
+npm install
+node server.js
+```
 
-- `POST /api/transform/schema` - Transform a schema using Google Gemini Flash 2.2 API
+The server will run on port 3001 (or the port specified in the .env file).
 
-## Database Support
+## Database Drivers
 
-This service supports the following database types:
+The server includes drivers for:
+- PostgreSQL (`pg` package)
+- MySQL (`mysql2` package)
+- SQL Server (`mssql` package)
 
-- PostgreSQL
-- MySQL
-- Microsoft SQL Server
-- Oracle
-- MongoDB
+These are used for testing connections and retrieving schema information.
 
-## NiFi Integration
+## NiFi Configuration
 
-The service communicates with NiFi using its REST API. It creates and manages:
+The backend expects Apache NiFi to be running and accessible. It can be configured to work with:
+- Password-based authentication
+- Certificate-based authentication
+- Kerberos authentication
 
-1. Process Groups for workflows
-2. Controller Services for database connections
-3. Processors for ETL operations
-
-## Schema Transformation
-
-Schema transformation is handled by a NiFi pipeline that uses the Google Gemini Flash 2.2 API via the InvokeHTTP processor. The pipeline:
-
-1. Extracts data from the source database using ExecuteSQL
-2. Transforms the schema using Gemini Flash 2.2 API
-3. Loads the transformed data to the destination database using PutDatabaseRecord
-
-## Security Considerations
-
-- Store database credentials securely
-- Use HTTPS for production deployments
-- Implement proper authentication and authorization
-- Validate and sanitize all inputs
-
-## Troubleshooting
-
-- Check NiFi logs for errors
-- Ensure NiFi API is accessible
-- Verify database connection parameters
-- Check network connectivity between services 
+For development and testing, you can set `MOCK_NIFI_API=true` to use mock responses without a real NiFi instance. 
