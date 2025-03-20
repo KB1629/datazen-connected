@@ -87,7 +87,7 @@ const NifiPipeline = () => {
           return;
         }
         
-        // Then fetch pipeline details
+        // Then fetch pipeline details 
         const data = await getNifiPipeline(id);
         setPipeline(data);
         

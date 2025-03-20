@@ -20,7 +20,7 @@ app.use(morgan('dev'));
 const PORT = process.env.PORT || 3001;
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-for-jwt';
+const JWT_SECRET = process.env.JWT_SECRET || 'fdghtndgfndfgndgnd';
 
 // Middleware to authenticate JWT token
 function authenticateToken(req, res, next) {

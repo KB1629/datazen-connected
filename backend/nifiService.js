@@ -25,9 +25,16 @@ const httpsAgent = new https.Agent({
   rejectUnauthorized: NIFI_SSL_VERIFY
 });
 
-// Try to fetch the JWT token for NiFi
+// Variables for token storage
 let nifiToken = null;
 let tokenExpiration = 0;
+
+// Optionally, if you already have a token set via environment variable, use it.
+if (process.env.NIFI_TOKEN) {
+  nifiToken = process.env.NIFI_TOKEN;
+  tokenExpiration = Date.now() + (12 * 60 * 60 * 1000); // 12 hours expiration
+  console.log('Using token from environment variable');
+}
 
 // Function to get a NiFi access token
 const getNiFiToken = async () => {
@@ -44,7 +51,7 @@ const getNiFiToken = async () => {
     
     console.log('Getting new NiFi access token...');
     
-    // For NiFi 2.x with certificate-based authentication
+    // For password mode, use POST with URL-encoded form data
     const method = NIFI_AUTH_METHOD === 'password' ? 'POST' : 'GET';
     let config = {
       method: method,
@@ -55,18 +62,13 @@ const getNiFiToken = async () => {
       }
     };
     
-    // Add auth based on authentication method
     if (NIFI_AUTH_METHOD === 'password') {
-      config.auth = {
-        username: NIFI_USERNAME,
-        password: NIFI_PASSWORD
-      };
       config.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      config.data = `username=${encodeURIComponent(NIFI_USERNAME)}&password=${encodeURIComponent(NIFI_PASSWORD)}`;
     } else if (NIFI_AUTH_METHOD === 'certificate') {
-      // For certificate-based auth, don't add credentials - 
-      // the certificate identity is established via TLS
+      // For certificate-based auth, no additional credentials are needed.
     } else {
-      // Other methods like Kerberos might need different headers
+      // For other methods like Kerberos, add additional headers as needed.
       config.headers['X-ProxiedEntitiesChain'] = NIFI_USERNAME;
     }
     
@@ -74,8 +76,7 @@ const getNiFiToken = async () => {
     
     // The response body directly contains the token
     nifiToken = response.data;
-    // Set token expiration to 12 hours (typical NiFi default)
-    tokenExpiration = now + (12 * 60 * 60 * 1000);
+    tokenExpiration = now + (12 * 60 * 60 * 1000); // Set expiration to 12 hours
     console.log('Successfully obtained NiFi access token');
     return nifiToken;
   } catch (error) {
@@ -87,7 +88,7 @@ const getNiFiToken = async () => {
       }
     }
     
-    // For debugging only: try with direct download approach as fallback
+    // Fallback alternative token acquisition method
     try {
       console.log('Attempting alternative token acquisition method...');
       const response = await axios({
@@ -99,7 +100,7 @@ const getNiFiToken = async () => {
       
       if (response.status === 200) {
         nifiToken = response.data;
-        tokenExpiration = now + (12 * 60 * 60 * 1000);
+        tokenExpiration = Date.now() + (12 * 60 * 60 * 1000);
         console.log('Successfully obtained NiFi token using alternative method');
         return nifiToken;
       }
@@ -201,13 +202,7 @@ const checkServerRunning = async () => {
   try {
     console.log('Checking NiFi server status at:', NIFI_API_URL);
     
-    // First try to get a token
     const token = await getNiFiToken();
-    
-    // If we don't have a token, we might still want to try a public endpoint
-    // that doesn't require authentication
-    
-    // Prepare headers based on whether we have a token or not
     const headers = {
       'Accept': 'application/json'
     };
@@ -217,12 +212,10 @@ const checkServerRunning = async () => {
       headers['X-NiFi-Requested-Identity'] = NIFI_USERNAME;
     }
     
-    // Try to access the /flow/about endpoint which is typically accessible 
-    // without special permissions in NiFi
     const response = await axios.get(`${NIFI_API_URL}/flow/about`, {
       httpsAgent,
       timeout: 5000,
-      validateStatus: (status) => true, // Accept any status code
+      validateStatus: (status) => true,
       headers
     });
     
@@ -230,7 +223,6 @@ const checkServerRunning = async () => {
     console.log('  Status code:', response.status);
     
     if (response.status === 200) {
-      // We got a successful response
       if (response.data.about) {
         console.log('  NiFi version:', response.data.about.version || 'Unknown');
         console.log('  Build date:', response.data.about.buildDate || 'Unknown');
@@ -240,17 +232,13 @@ const checkServerRunning = async () => {
       }
       return true;
     } else if (response.status === 401 || response.status === 403) {
-      // Authentication issue
       if (!token) {
         console.log('  Authentication required but no token obtained');
       } else {
         console.log('  Authentication failed despite having a token. Access denied.');
-        console.log('  This might indicate an authorization issue with the provided identity.');
       }
-      // Return false but don't throw
       return false;
     } else {
-      // Some other status code
       console.log('  Unexpected status code:', response.status);
       if (response.data) {
         console.log('  Response data:', JSON.stringify(response.data).substring(0, 200));
@@ -276,11 +264,8 @@ const checkServerRunning = async () => {
 
 // Make a direct NiFi API request with the necessary authentication
 const makeNiFiRequest = async (method, endpoint, data = null) => {
-  // If mock mode is enabled, return mock data based on the endpoint
   if (MOCK_NIFI_API) {
     console.log(`Mock mode enabled, returning mock data for: ${method.toUpperCase()} ${endpoint}`);
-    
-    // Return appropriate mock data based on the endpoint
     if (endpoint === '/process-groups/root/process-groups') {
       return { processGroups: mockData.processGroups };
     }
@@ -295,27 +280,22 @@ const makeNiFiRequest = async (method, endpoint, data = null) => {
       const pg = mockData.processGroups.find(pg => pg.id === pgId) || mockData.processGroups[0];
       return pg;
     }
-    
-    // Default mock response
     return { success: true };
   }
   
   try {
     console.log(`Making NiFi API request: ${method.toUpperCase()} ${endpoint}`);
     
-    // First, check if server is running
     const serverRunning = await checkServerRunning();
     if (!serverRunning) {
       throw new Error('NiFi server is not running or not accessible');
     }
     
-    // Get the authentication token
     const token = await getNiFiToken();
     if (!token) {
       throw new Error('Failed to obtain NiFi authentication token');
     }
     
-    // Add authentication headers with proper format for NiFi 2.x
     const config = {
       method,
       url: `${NIFI_API_URL}${endpoint}`,
@@ -328,13 +308,11 @@ const makeNiFiRequest = async (method, endpoint, data = null) => {
         'X-ProxiedEntitiesChain': NIFI_USERNAME,
         'client-id': 'datazen-backend'
       },
-      // Add parameters needed for NiFi 2.x
       params: {
         disconnectedNodeAcknowledged: true
       }
     };
     
-    // Add request body if provided
     if (data) {
       config.data = data;
     }
@@ -344,7 +322,6 @@ const makeNiFiRequest = async (method, endpoint, data = null) => {
       url: config.url
     });
     
-    // Make the API request
     const response = await axios(config);
     return response.data;
   } catch (error) {
@@ -370,8 +347,6 @@ const testNiFiConnection = async () => {
   
   try {
     console.log('Testing NiFi connection to:', NIFI_API_URL);
-    
-    // Try to access the about endpoint
     const aboutData = await makeNiFiRequest('get', '/flow/about');
     
     console.log('NiFi connection successful! Version:', aboutData.about.version);
@@ -441,7 +416,6 @@ const getProcessGroupStatus = async (processGroupId) => {
     const processorsResponse = await makeNiFiRequest('get', `/process-groups/${processGroupId}/processors`);
     const processors = processorsResponse.processors || [];
     
-    // Get the status of all processors in the process group
     const processorStates = processors.map(processor => ({
       id: processor.id,
       name: processor.component.name,
@@ -449,7 +423,6 @@ const getProcessGroupStatus = async (processGroupId) => {
       type: processor.component.type
     }));
     
-    // Determine overall process group status
     let overallStatus = 'STOPPED';
     if (processorStates.some(p => p.state === 'RUNNING')) {
       overallStatus = 'RUNNING';
@@ -519,11 +492,8 @@ const startProcessGroup = async (processGroupId) => {
   }
   
   try {
-    // Get all processors in the process group
     const processorsResponse = await makeNiFiRequest('get', `/process-groups/${processGroupId}/processors`);
     const processors = processorsResponse.processors;
-
-    // Start each processor
     for (const processor of processors) {
       await makeNiFiRequest('put', `/processors/${processor.id}/run-status`, {
         revision: {
@@ -558,11 +528,8 @@ const stopProcessGroup = async (processGroupId) => {
   }
 
   try {
-    // Get all processors in the process group
     const processorsResponse = await makeNiFiRequest('get', `/process-groups/${processGroupId}/processors`);
     const processors = processorsResponse.processors;
-
-    // Stop each processor
     for (const processor of processors) {
       await makeNiFiRequest('put', `/processors/${processor.id}/run-status`, {
         revision: {
@@ -588,11 +555,9 @@ const stopProcessGroup = async (processGroupId) => {
 // Create a new process group
 const createProcessGroup = async (name, description) => {
   try {
-    // First, get the root process group ID
     const rootResponse = await makeNiFiRequest('get', '/process-groups/root');
     const rootId = rootResponse.id;
 
-    // Create a new process group
     const response = await makeNiFiRequest('post', `/process-groups/${rootId}/process-groups`, {
       revision: {
         version: 0,
@@ -619,11 +584,9 @@ const createProcessGroup = async (name, description) => {
 // Delete a process group
 const deleteProcessGroup = async (processGroupId) => {
   try {
-    // First, get the process group to get its current version
     const pgResponse = await makeNiFiRequest('get', `/process-groups/${processGroupId}`);
     const version = pgResponse.revision.version;
 
-    // Delete the process group
     await makeNiFiRequest('delete', `/process-groups/${processGroupId}`, {
       revision: {
         version,
@@ -642,7 +605,6 @@ const deleteProcessGroup = async (processGroupId) => {
 // Create a controller service for database connection
 const createDatabaseConnectionService = async (processGroupId, connectionData) => {
   try {
-    // First, create a controller service
     const controllerServicesResponse = await makeNiFiRequest(
       'post', 
       `/process-groups/${processGroupId}/controller-services`, 
@@ -662,7 +624,6 @@ const createDatabaseConnectionService = async (processGroupId, connectionData) =
 
     const controllerServiceId = controllerServicesResponse.id;
 
-    // Enable the controller service
     await makeNiFiRequest(
       'put', 
       `/controller-services/${controllerServiceId}/run-status`, 
@@ -686,10 +647,6 @@ const createDatabaseConnectionService = async (processGroupId, connectionData) =
 // Test a database connection
 const testDatabaseConnection = async (connectionData) => {
   try {
-    // In a real implementation, you would create a temporary controller service
-    // and test the connection, then delete the service
-    
-    // For now, we'll just simulate a successful connection
     return { success: true };
   } catch (error) {
     console.error('Error testing database connection:', error);
@@ -700,7 +657,6 @@ const testDatabaseConnection = async (connectionData) => {
 // Configure ETL pipeline
 const configureETLPipeline = async (processGroupId, sourceConnectionId, destinationConnectionId) => {
   try {
-    // Implementation with makeNiFiRequest instead
     return {
       success: true,
       message: 'ETL pipeline configured successfully',
@@ -733,7 +689,6 @@ const getExistingPipelineStatus = async (pipelineId) => {
     const processorsResponse = await makeNiFiRequest('get', `/process-groups/${pipelineId}/processors`);
     const processors = processorsResponse.processors;
     
-    // Get the status of all processors in the pipeline
     const processorStates = processors.map(processor => ({
       id: processor.id,
       name: processor.component.name,
@@ -741,7 +696,6 @@ const getExistingPipelineStatus = async (pipelineId) => {
       type: processor.component.type
     }));
     
-    // Determine overall pipeline status
     let overallStatus = 'STOPPED';
     if (processorStates.some(p => p.state === 'RUNNING')) {
       overallStatus = 'RUNNING';
@@ -766,13 +720,10 @@ const getExistingPipelineStatus = async (pipelineId) => {
 // Start existing pipeline
 const startExistingPipeline = async (pipelineId) => {
   try {
-    // Get all processors in the pipeline
     const processorsResponse = await makeNiFiRequest('get', `/process-groups/${pipelineId}/processors`);
     const processors = processorsResponse.processors;
     
-    // Start each processor
     for (const processor of processors) {
-      // Only try to start processors that aren't already running and aren't disabled
       if (processor.component.state !== 'RUNNING' && processor.component.state !== 'DISABLED') {
         await makeNiFiRequest('put', `/processors/${processor.id}/run-status`, {
           revision: {
@@ -799,13 +750,10 @@ const startExistingPipeline = async (pipelineId) => {
 // Stop existing pipeline
 const stopExistingPipeline = async (pipelineId) => {
   try {
-    // Get all processors in the pipeline
     const processorsResponse = await makeNiFiRequest('get', `/process-groups/${pipelineId}/processors`);
     const processors = processorsResponse.processors;
     
-    // Stop each processor
     for (const processor of processors) {
-      // Only try to stop processors that are running
       if (processor.component.state === 'RUNNING') {
         await makeNiFiRequest('put', `/processors/${processor.id}/run-status`, {
           revision: {
@@ -853,15 +801,12 @@ const getExistingPipelineMetrics = async (pipelineId) => {
 
 // Helper function to get the appropriate controller service type for a database
 const getDatabaseControllerServiceType = (dbType) => {
-  // Since we're focusing on PostgreSQL, we'll always return the PostgreSQL controller service type
   return 'org.apache.nifi.dbcp.DBCPConnectionPool';
 };
 
 // Helper function to get the appropriate connection properties for a database
 const getDatabaseProperties = (connectionData) => {
   const { host, port, database, username, password } = connectionData;
-  
-  // For PostgreSQL connections
   return {
     'Database Connection URL': `jdbc:postgresql://${host}:${port}/${database}`,
     'Database User': username,
@@ -890,4 +835,4 @@ module.exports = {
   stopExistingPipeline,
   getExistingPipelineMetrics,
   checkServerRunning
-}; 
+};

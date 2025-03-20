@@ -72,6 +72,8 @@ const NifiPipeline = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
+ 
+
   // Fetch pipeline data
   useEffect(() => {
     const fetchPipeline = async () => {

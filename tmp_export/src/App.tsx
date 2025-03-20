@@ -1,3 +1,11 @@
+// Store the token in localStorage if not already present
+if (!localStorage.getItem('token')) {
+  localStorage.setItem(
+    'token',
+    'eyJraWQiOiJmY2ZkZjgyMy01NjhjLTQ2MDYtYmU5MC1jY2MwNTkxMDUxOTgiLCJhbGciOiJFZERTQSJ9.eyJzdWIiOiI4NDEyMjgzYS0zZmJkLTQ4OTMtYjk3Ni1mYmFhYThkMzVhOTEiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo4NDQzIiwibmJmIjoxNzQyMzYyMjQyLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo4NDQzIiwiZ3JvdXBzIjpbXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiODQxMjI4M2EtM2ZiZC00ODkzLWI5NzYtZmJhYWE4ZDM1YTkxIiwiZXhwIjoxNzQyMzkxMDQyLCJpYXQiOjE3NDIzNjIyNDIsImp0aSI6ImI4N2E3ZmQzLWJjOTMtNGZiMy1iODY2LWU1YjlkMWQyYjE4MyJ9.Epmufy98w7qc-3Xu9UNA0M1Iqcxq3ZqpJs1d17iW2UrnkX3g1RbBHpq5FpzCjzJ4y2v63cc-0oj6TIYL18e2Aw'
+  );
+}
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";

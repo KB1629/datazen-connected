@@ -5,7 +5,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 
 // Helper function to get auth headers with token
 function getAuthHeaders() {
-  const token = localStorage.getItem('token');
+  // First try to get the token from localStorage,
+  // if not available, use the environment variable VITE_TOKEN (if you set it)
+  const token = localStorage.getItem('token') || import.meta.env.VITE_TOKEN;
   return {
     'Content-Type': 'application/json',
     'Authorization': token ? `Bearer ${token}` : ''
@@ -257,4 +259,4 @@ export const getNifiPipelineMetrics = async (id: string) => {
     console.error('Error fetching NiFi pipeline metrics:', error);
     throw error;
   }
-}; 
+};
